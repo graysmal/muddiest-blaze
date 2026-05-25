@@ -1,14 +1,14 @@
 ﻿@inherits LayoutComponentBase
 
 <MudPaper Height="100vh" Class="pa-2 d-flex flex-column">
-    <MudStack Row="true" StretchItems="StretchItems.End" Class="flex-grow-1">
+    <MudStack Row="true" StretchItems="StretchItems.End" Class="flex-grow-1" Style="height:-webkit-fill-available">
         <MudNavMenu>
             <MudText Typo="Typo.h6" Class="px-4">The Muddiest Blaze</MudText>
             <MudText Typo="Typo.body2" Class="px-4 mud-text-secondary">oops! all mud!</MudText>
             <MudDivider Class="my-2"/>
             <MudNavLink Href="/">Home</MudNavLink>
         </MudNavMenu>
-        <MudPaper Outlined="true">
+        <MudPaper Outlined="true" Style="overflow:scroll;padding:1em">
             @Body
         </MudPaper>
     </MudStack>
