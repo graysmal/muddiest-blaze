@@ -1,5 +1,7 @@
 @page "/MicrosoftIdentity/Account/AccessDenied"
 @layout MainLayout
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 
 <h3>Forbidden</h3>
 <p>Sorry, you are not authorized to view this content.</p>

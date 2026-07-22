@@ -6,7 +6,9 @@
             <MudText Typo="Typo.h6" Class="px-4">The Muddiest Blaze</MudText>
             <MudText Typo="Typo.body2" Class="px-4 mud-text-secondary">oops! all mud!</MudText>
             <MudDivider Class="my-2"/>
-            <MudNavLink Href="/">Home</MudNavLink>
+            <MudNavLink Href="/" Match="NavLinkMatch.All">Home</MudNavLink>
+            <MudNavLink Href="/admin">Admin</MudNavLink>
+            <MudNavLink Href="/MicrosoftIdentity/Account/SignOut">Sign Out</MudNavLink>
         </MudNavMenu>
         <MudPaper Outlined="true" Style="overflow:scroll;padding:1em;contain:inline-size">
             @Body
