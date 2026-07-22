@@ -10,7 +10,6 @@ WORKDIR /src
 COPY ["BlazorApp1.csproj", "./"]
 RUN dotnet restore "BlazorApp1.csproj"
 COPY . .
-WORKDIR "/src/"
 RUN dotnet build "./BlazorApp1.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
