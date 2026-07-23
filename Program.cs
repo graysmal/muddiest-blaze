@@ -27,7 +27,41 @@ builder.Services.AddSerilog((services, lc) => lc
 
 // https://learn.microsoft.com/en-us/aspnet/core/blazor/security/blazor-web-app-with-entra?view=aspnetcore-10.0&pivots=without-yarp-and-aspire#supply-configuration-with-the-json-configuration-provider-app-settings
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+    .AddMicrosoftIdentityWebApp(opts =>
+    {
+        builder.Configuration.GetSection("AzureAd").Bind(opts);
+        opts.Events = new OpenIdConnectEvents
+        {
+            OnRedirectToIdentityProvider = context =>
+            {
+                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User attempting login.");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                var identity =  context.Principal?.Identity;
+                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User {Name} successfully logged in.", identity!.Name);
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogError("Authentication failed: {Error}", context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnRedirectToIdentityProviderForSignOut = context =>
+            {
+                // TODO: add identity name to response cookies and retrieve them in signedoutcallbackredirect to log the specific Identity's logout.
+                var identity = context.HttpContext.User.Identity;
+                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User {Name} requested logout.", identity!.Name);
+                return Task.CompletedTask;
+            },
+            OnSignedOutCallbackRedirect = context =>
+            {
+                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User successfully logged out.");
+                return Task.CompletedTask;
+            }
+        };
+    });
 builder.Services.AddAuthorization();
 builder.Services.AddControllersWithViews()
     .AddMicrosoftIdentityUI();
