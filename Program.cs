@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using MudBlazor.Services;
+using Serilog;
+using Serilog.Events;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,14 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
 
+// https://codewithmukesh.com/blog/structured-logging-with-serilog-in-aspnet-core/
+// used fluent api rather than appsettings.json because the json object is pretty gross,
+// and there are likely not many changes to be made to these settings per deployment.
+builder.Services.AddSerilog((services, lc) => lc
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .WriteTo.Console()
+    .Enrich.FromLogContext());
 
 
 // https://learn.microsoft.com/en-us/aspnet/core/blazor/security/blazor-web-app-with-entra?view=aspnetcore-10.0&pivots=without-yarp-and-aspire#supply-configuration-with-the-json-configuration-provider-app-settings
@@ -50,6 +60,7 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+app.UseSerilogRequestLogging();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
