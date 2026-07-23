@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using MudBlazor.Services;
+using NpgsqlTypes;
 using Serilog;
 using Serilog.Events;
+using Serilog.Sinks.PostgreSQL;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,10 +20,24 @@ builder.Services.AddMudServices();
 // https://codewithmukesh.com/blog/structured-logging-with-serilog-in-aspnet-core/
 // used fluent api rather than appsettings.json because the json object is pretty gross,
 // and there are likely not many changes to be made to these settings per deployment.
+// https://github.com/b00ted/serilog-sinks-postgresql
+IDictionary<string, ColumnWriterBase> columnWriters = new Dictionary<string, ColumnWriterBase>
+{
+    {"raise_date", new TimestampColumnWriter(NpgsqlDbType.Timestamp) },
+    {"level", new LevelColumnWriter(true, NpgsqlDbType.Varchar) },
+    {"message", new RenderedMessageColumnWriter(NpgsqlDbType.Text) },
+    {"message_template", new MessageTemplateColumnWriter(NpgsqlDbType.Text) },
+    {"exception", new ExceptionColumnWriter(NpgsqlDbType.Text) },
+    {"properties", new LogEventSerializedColumnWriter(NpgsqlDbType.Jsonb) },
+    {"props_test", new PropertiesColumnWriter(NpgsqlDbType.Jsonb) },
+    {"machine_name", new SinglePropertyColumnWriter("MachineName", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") }
+};
 builder.Services.AddSerilog((services, lc) => lc
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .WriteTo.Console()
+    .WriteTo.PostgreSQL(builder.Configuration.GetConnectionString("PostgreSQL"), "Log", columnWriters,
+        needAutoCreateTable: true)
     .Enrich.FromLogContext());
 
 
@@ -80,6 +96,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 var app = builder.Build();
 app.UseForwardedHeaders();
+app.UseSerilogRequestLogging();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -94,7 +111,7 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
-app.UseSerilogRequestLogging();
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
