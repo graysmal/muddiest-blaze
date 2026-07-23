@@ -6,6 +6,7 @@ using Microsoft.Identity.Web.UI;
 using MudBlazor.Services;
 using NpgsqlTypes;
 using Serilog;
+using Serilog.Enrichers;
 using Serilog.Events;
 using Serilog.Sinks.PostgreSQL;
 
@@ -38,7 +39,11 @@ builder.Services.AddSerilog((services, lc) => lc
     .WriteTo.Console()
     .WriteTo.PostgreSQL(builder.Configuration.GetConnectionString("PostgreSQL"), "Log", columnWriters,
         needAutoCreateTable: true)
-    .Enrich.FromLogContext());
+    .Enrich.FromLogContext()
+    .Enrich.WithClientIp(IpVersionPreference.Ipv4Only)
+    .Enrich.WithCorrelationId()
+    .Enrich.WithRequestHeader("User-Agent")
+    .Enrich.WithUserClaims("Name", "preferred_username"));
 
 
 // https://learn.microsoft.com/en-us/aspnet/core/blazor/security/blazor-web-app-with-entra?view=aspnetcore-10.0&pivots=without-yarp-and-aspire#supply-configuration-with-the-json-configuration-provider-app-settings
@@ -82,6 +87,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllersWithViews()
     .AddMicrosoftIdentityUI();
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddHttpContextAccessor();
 
 // https://stackoverflow.com/questions/43749236/net-core-x-forwarded-proto-not-working
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
