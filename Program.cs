@@ -10,7 +10,9 @@ using Serilog.Enrichers;
 using Serilog.Events;
 using Serilog.Sinks.PostgreSQL;
 using System.Security.Claims;
+using BlazorApp1.Context;
 using Serilog.Enrichers.Span;
+using Microsoft.EntityFrameworkCore;
 
 // gets Name and preferred_username claims for OIDC log events.
 static (string? Name, string? PreferredUsername) GetLoggingClaims(ClaimsPrincipal? principal)
@@ -133,6 +135,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownIPNetworks.Clear(); 
     options.KnownProxies.Clear();
 });
+
+builder.Services.AddDbContextFactory<PostgresContext>(options => 
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("PostgreSQL") ??
+        throw new InvalidOperationException("PostgreSQL connection string not found.")));
 
 var app = builder.Build();
 app.UseForwardedHeaders();
