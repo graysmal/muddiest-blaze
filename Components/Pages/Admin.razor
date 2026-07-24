@@ -2,12 +2,16 @@
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
 @using Microsoft.AspNetCore.Authorization
+@using System.Text.Json
 @inject PostgresContext Pg
 @attribute [Authorize]
 @* @attribute [Authorize(Roles="God")] *@
 <style>
     .nowrap {
         text-wrap-mode: nowrap;
+    }
+    .wrap {
+        text-wrap-mode: wrap !important;
     }
     .h-full {
         /*100% - height of PagerContent*/
@@ -19,69 +23,77 @@
 </style>
 <MudTabs Border="true" Class="overflow-hidden" Style="height:100%" TabPanelsClass="overflow-scroll d-flex h-full">
     <MudTabPanel Text="Monitor" Style="width:100%;height:100%">
-        <MudTable @ref="_table" ServerData="ServerReload" Elevation="0" Dense="true" Class="d-flex flex-column h-full" 
-                  ContainerClass="h-full" FixedHeader="true" HorizontalScrollbar="true" 
-                  RowClass="nowrap" Breakpoint="Breakpoint.None">
+        <MudDataGrid @ref="_grid" T="Log" ServerData="ServerReload" Elevation="0" Dense="true"
+                     Class="d-flex flex-column h-full" ContainerClass="h-full"
+                     FixedHeader="true" Height="100%" Hover="true"
+                     ColumnResizeMode="ResizeMode.Container"
+                     Filterable="true" FilterMode="DataGridFilterMode.ColumnFilterMenu"
+                     ShowMenuIcon="true" Hideable="true" ShowColumnOptions="false" 
+                     SortMode="SortMode.Single" RowClass="nowrap" Breakpoint="Breakpoint.None" >
             <ToolBarContent>
                 <MudText Typo="Typo.h6">System Logs</MudText>
                 <MudSpacer/>
                 <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
             </ToolBarContent>
-            <HeaderContent>
-                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortLabel="Timestamp" T="Log">Timestamp</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortLabel="Name" T="Log">Name</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortLabel="ClientIp" T="Log">ClientIp</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortLabel="Message" T="Log">Message</MudTableSortLabel></MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.Timestamp</MudTd>
-                <MudTd>@context.Name</MudTd>
-                <MudTd>@context.ClientIp</MudTd>
-                <MudTd>@context.Message</MudTd>
-            </RowTemplate>
+            <Columns>
+                <PropertyColumn Property="x => x.Timestamp" Title="Timestamp" Resizable="true" InitialDirection="SortDirection.Descending" />
+                <PropertyColumn Property="x => x.Level" Title="Message" Resizable="true" />
+                <PropertyColumn Property="x => x.Name" Title="Name" Resizable="true" />
+                <PropertyColumn Property="x => x.PreferredUsername" Title="PreferredUsername" Resizable="true" />
+                <PropertyColumn Property="x => x.ClientIp" Title="ClientIp" Resizable="true" />
+                <PropertyColumn Property="x => x.MachineName" Title="MachineName" Resizable="true" Hidden="true" />
+                <PropertyColumn Property="x => x.UserAgent" Title="UserAgent" Resizable="true" Hidden="true" />
+                <PropertyColumn Property="x => x.RequestMethod" Title="RequestMethod" Resizable="true" Hidden="true" />
+                <PropertyColumn Property="x => x.RequestPath" Title="RequestPath" Resizable="true" Hidden="true" />
+                <PropertyColumn Property="x => x.StatusCode" Title="StatusCode" Resizable="true" Hidden="true" />
+                <PropertyColumn Property="x => x.Message" Title="Message" Resizable="true" />
+                <PropertyColumn Property="x => x.Exception" Class="wrap" Title="Exception" Resizable="true" Hidden="true" />
+                <PropertyColumn Property="x => x.RequestId" Title="RequestId" Resizable="true" Hidden="true" />
+                <PropertyColumn Property="x => x.TraceId" Title="TraceId" Resizable="true" Hidden="true" />
+            </Columns>
             <PagerContent>
-                <MudTablePager Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
+                <MudDataGridPager T="Log" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
             </PagerContent>
-        </MudTable>
+        </MudDataGrid>
     </MudTabPanel>
 </MudTabs>
 
 @code {
     private string _searchString = "";
-    private MudTable<Log> _table = null!;
+    private MudDataGrid<Log> _grid = null!;
     
-    private async Task<TableData<Log>> ServerReload(TableState state, CancellationToken token)
+    private async Task<GridData<Log>> ServerReload(GridState<Log> state, CancellationToken token = default)
     {
         IEnumerable<Log> data = Pg.Logs;
         data = data.Where(o =>
         {
-            return $"{o.Timestamp} {o.Name} {o.ClientIp} {o.Message}".Contains(_searchString);
+            // TODO: do **ANYTHING** but this.
+            return $"{JsonSerializer.Serialize(o).ToLower()}".Contains(_searchString.ToLower());
         }).ToArray();
-        var totalItems = data.Count();
-        switch (state.SortLabel)
-        {
-            case "Timestamp":
-                data = data.OrderByDirection(state.SortDirection, o => o.Timestamp);
-                break;
-            case "Name":
-                data = data.OrderByDirection(state.SortDirection, o => o.Name);
-                break;
-            case "ClientIp":
-                data = data.OrderByDirection(state.SortDirection, o => o.ClientIp);
-                break;
-            case "Message":
-                data = data.OrderByDirection(state.SortDirection, o => o.Message);
-                break;
-        }
-
         
+        if (state.SortDefinitions.Any())
+        {
+            var firstSort = state.SortDefinitions.First();
+            data = firstSort.Descending
+                ? data.OrderByDescending(firstSort.SortFunc).ToList()
+                : data.OrderBy(firstSort.SortFunc).ToList();
+        }
+        if (state.FilterDefinitions.Any())
+        {
+            var filterFunctions = state.FilterDefinitions.Select(f => f.GenerateFilterFunction());
+            data = data
+                .Where(o => filterFunctions.All(f => f(o)))
+                .ToList();
+        }
+        var totalItems = data.Count();
+
         var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
-        return new TableData<Log>() {TotalItems = totalItems, Items = pagedData};
+        return new GridData<Log> {TotalItems = totalItems, Items = pagedData};
     }
     private void OnSearch(string text)
     {
         _searchString = text;
-        _table.ReloadServerData();
+        _grid.ReloadServerData();
     }
 }
