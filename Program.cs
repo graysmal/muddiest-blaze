@@ -47,7 +47,7 @@ IDictionary<string, ColumnWriterBase> columnWriters = new Dictionary<string, Col
     {"request_method", new SinglePropertyColumnWriter("RequestMethod", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
     {"status_code", new SinglePropertyColumnWriter("StatusCode", PropertyWriteMethod.Raw, NpgsqlDbType.Integer, "l") },
     {"elapsed_ms", new SinglePropertyColumnWriter("Elapsed", PropertyWriteMethod.Raw, NpgsqlDbType.Double, "l") },
-    {"trace_id", new SinglePropertyColumnWriter("TraceId", PropertyWriteMethod.Raw, NpgsqlDbType.Double, "l")},
+    {"trace_id", new SinglePropertyColumnWriter("TraceId", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l")},
     {"request_id", new SinglePropertyColumnWriter("RequestId", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
     {"message", new RenderedMessageColumnWriter() },
     {"message_template", new MessageTemplateColumnWriter() },
