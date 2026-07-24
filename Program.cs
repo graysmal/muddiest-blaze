@@ -9,7 +9,18 @@ using Serilog;
 using Serilog.Enrichers;
 using Serilog.Events;
 using Serilog.Sinks.PostgreSQL;
+using System.Security.Claims;
 
+// gets Name and preferred_username claims for OIDC log events.
+static (string? Name, string? PreferredUsername) GetLoggingClaims(ClaimsPrincipal? principal)
+{
+    if (principal?.Identity?.IsAuthenticated != true)
+        return (null, null);
+
+    var name = principal.FindFirst("name")?.Value;
+    var preferredUsername = principal.FindFirst("preferred_username")?.Value;
+    return (name, preferredUsername);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,14 +35,22 @@ builder.Services.AddMudServices();
 // https://github.com/b00ted/serilog-sinks-postgresql
 IDictionary<string, ColumnWriterBase> columnWriters = new Dictionary<string, ColumnWriterBase>
 {
-    {"raise_date", new TimestampColumnWriter(NpgsqlDbType.Timestamp) },
+    {"timestamp", new TimestampColumnWriter() },
     {"level", new LevelColumnWriter(true, NpgsqlDbType.Varchar) },
-    {"message", new RenderedMessageColumnWriter(NpgsqlDbType.Text) },
-    {"message_template", new MessageTemplateColumnWriter(NpgsqlDbType.Text) },
-    {"exception", new ExceptionColumnWriter(NpgsqlDbType.Text) },
-    {"properties", new LogEventSerializedColumnWriter(NpgsqlDbType.Jsonb) },
-    {"props_test", new PropertiesColumnWriter(NpgsqlDbType.Jsonb) },
-    {"machine_name", new SinglePropertyColumnWriter("MachineName", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") }
+    {"name", new SinglePropertyColumnWriter("Name", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
+    {"preferred_username", new SinglePropertyColumnWriter("preferred_username", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
+    {"client_ip", new SinglePropertyColumnWriter("ClientIp", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
+    {"machine_name", new SinglePropertyColumnWriter("MachineName", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
+    {"user_agent", new SinglePropertyColumnWriter("UserAgent", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
+    {"request_path", new SinglePropertyColumnWriter("RequestPath", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
+    {"request_method", new SinglePropertyColumnWriter("RequestMethod", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
+    {"status_code", new SinglePropertyColumnWriter("StatusCode", PropertyWriteMethod.Raw, NpgsqlDbType.Integer, "l") },
+    {"message", new RenderedMessageColumnWriter() },
+    {"message_template", new MessageTemplateColumnWriter() },
+    {"exception", new ExceptionColumnWriter() },
+    {"properties", new LogEventSerializedColumnWriter() },
+    {"props_test", new PropertiesColumnWriter() }
+    
 };
 builder.Services.AddSerilog((services, lc) => lc
     .MinimumLevel.Information()
@@ -43,7 +62,8 @@ builder.Services.AddSerilog((services, lc) => lc
     .Enrich.WithClientIp(IpVersionPreference.Ipv4Only)
     .Enrich.WithCorrelationId()
     .Enrich.WithRequestHeader("User-Agent")
-    .Enrich.WithUserClaims("Name", "preferred_username"));
+    .Enrich.WithUserClaims("Name", "preferred_username")
+    .Enrich.WithMachineName());
 
 
 // https://learn.microsoft.com/en-us/aspnet/core/blazor/security/blazor-web-app-with-entra?view=aspnetcore-10.0&pivots=without-yarp-and-aspire#supply-configuration-with-the-json-configuration-provider-app-settings
@@ -55,13 +75,17 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
         {
             OnRedirectToIdentityProvider = context =>
             {
+                // no name specified at this point.
                 context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User attempting login.");
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
-                var identity =  context.Principal?.Identity;
-                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User {Name} successfully logged in.", identity!.Name);
+                var (name, preferredUsername) = GetLoggingClaims(context.Principal);
+                var diagnosticContext = context.HttpContext.RequestServices.GetRequiredService<IDiagnosticContext>();
+                diagnosticContext.Set("Name", name);
+                diagnosticContext.Set("preferred_username", preferredUsername);
+                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User {Name} ({preferred_username}) successfully logged in.", name, preferredUsername);
                 return Task.CompletedTask;
             },
             OnAuthenticationFailed = context =>
@@ -71,9 +95,13 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
             },
             OnRedirectToIdentityProviderForSignOut = context =>
             {
-                // TODO: add identity name to response cookies and retrieve them in signedoutcallbackredirect to log the specific Identity's logout.
-                var identity = context.HttpContext.User.Identity;
-                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User {Name} requested logout.", identity!.Name);
+                // log only is made if there is an actual user requesting logout; null can be thrown out.
+                // this event triggers twice when a user logs out, once as the identity and once as null.
+                var (name, preferredUsername) = GetLoggingClaims(context.HttpContext.User);
+                if (name is not null || preferredUsername is not null) 
+                {
+                    context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User {Name} ({preferredUsername}) requested logout.", name, preferredUsername);
+                }
                 return Task.CompletedTask;
             },
             OnSignedOutCallbackRedirect = context =>
