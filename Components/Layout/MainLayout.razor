@@ -5,6 +5,10 @@
     }
     </style>
 <MudLayout Class="pa-2 d-flex flex-column" Style="height:100vh">
+    @if (!_open)
+    {
+        <MudSwipeArea Style="position: absolute;height: 100%;width:8%;left:0" OnSwipeMove="HandleSwipe"/>
+    }
     <MudDrawer @bind-Open="_open" Variant="DrawerVariant.Responsive" Elevation="0" Class="mud-paper ma-2"
                Style="display:flex !important;top:0;bottom:0;height:unset /* fix bottom gap. */"
                @onpointerenter="@OpenDrawer" @onfocusin="@OpenDrawer">
@@ -59,4 +63,13 @@
     {
         _open = true;
     }
+
+    private void HandleSwipe(MultiDimensionSwipeEventArgs e)
+    {
+        if (e.SwipeDirections[0] == SwipeDirection.LeftToRight)
+        {
+            OpenDrawer();
+        }
+    }
+
 }
