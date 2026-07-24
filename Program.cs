@@ -10,6 +10,7 @@ using Serilog.Enrichers;
 using Serilog.Events;
 using Serilog.Sinks.PostgreSQL;
 using System.Security.Claims;
+using Serilog.Enrichers.Span;
 
 // gets Name and preferred_username claims for OIDC log events.
 static (string? Name, string? PreferredUsername) GetLoggingClaims(ClaimsPrincipal? principal)
@@ -45,22 +46,27 @@ IDictionary<string, ColumnWriterBase> columnWriters = new Dictionary<string, Col
     {"request_path", new SinglePropertyColumnWriter("RequestPath", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
     {"request_method", new SinglePropertyColumnWriter("RequestMethod", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
     {"status_code", new SinglePropertyColumnWriter("StatusCode", PropertyWriteMethod.Raw, NpgsqlDbType.Integer, "l") },
+    {"elapsed_ms", new SinglePropertyColumnWriter("Elapsed", PropertyWriteMethod.Raw, NpgsqlDbType.Double, "l") },
+    {"trace_id", new SinglePropertyColumnWriter("TraceId", PropertyWriteMethod.Raw, NpgsqlDbType.Double, "l")},
+    {"request_id", new SinglePropertyColumnWriter("RequestId", PropertyWriteMethod.ToString, NpgsqlDbType.Text, "l") },
     {"message", new RenderedMessageColumnWriter() },
     {"message_template", new MessageTemplateColumnWriter() },
     {"exception", new ExceptionColumnWriter() },
-    {"properties", new LogEventSerializedColumnWriter() },
-    {"props_test", new PropertiesColumnWriter() }
+    {"properties", new LogEventSerializedColumnWriter() }
     
 };
+const string outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Name} ({preferred_username}, {ClientIp}, {MachineName}) trace:{TraceId} req:{RequestId} {Message:lj}{NewLine}{Exception}";
 builder.Services.AddSerilog((services, lc) => lc
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .WriteTo.Console()
+    .WriteTo.File("./logs/muddiest.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit:null, outputTemplate:outputTemplate)
     .WriteTo.PostgreSQL(builder.Configuration.GetConnectionString("PostgreSQL"), "Log", columnWriters,
         needAutoCreateTable: true)
     .Enrich.FromLogContext()
     .Enrich.WithClientIp(IpVersionPreference.Ipv4Only)
     .Enrich.WithCorrelationId()
+    .Enrich.WithSpan()
     .Enrich.WithRequestHeader("User-Agent")
     .Enrich.WithUserClaims("Name", "preferred_username")
     .Enrich.WithMachineName());
