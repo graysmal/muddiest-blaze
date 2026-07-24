@@ -1,5 +1,87 @@
 @page "/admin"
+@using BlazorApp1.Context
+@using BlazorApp1.Entities
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles="God")]
+@inject PostgresContext Pg
+@attribute [Authorize]
+@* @attribute [Authorize(Roles="God")] *@
+<style>
+    .nowrap {
+        text-wrap-mode: nowrap;
+    }
+    .h-full {
+        /*100% - height of PagerContent*/
+        height: 100%;
+        max-height: 100%;
+    }
+    /** { outline: 1px solid black;
+        outline-offset: -1px; }*/
+</style>
+<MudTabs Border="true" Class="overflow-hidden" Style="height:100%" TabPanelsClass="overflow-scroll d-flex h-full">
+    <MudTabPanel Text="Monitor" Style="width:100%;height:100%">
+        <MudTable @ref="_table" ServerData="ServerReload" Elevation="0" Dense="true" Class="d-flex flex-column h-full" 
+                  ContainerClass="h-full" FixedHeader="true" HorizontalScrollbar="true" 
+                  RowClass="nowrap" Breakpoint="Breakpoint.None">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">System Logs</MudText>
+                <MudSpacer/>
+                <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortLabel="Timestamp" T="Log">Timestamp</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="Name" T="Log">Name</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="ClientIp" T="Log">ClientIp</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="Message" T="Log">Message</MudTableSortLabel></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Timestamp</MudTd>
+                <MudTd>@context.Name</MudTd>
+                <MudTd>@context.ClientIp</MudTd>
+                <MudTd>@context.Message</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
+            </PagerContent>
+        </MudTable>
+    </MudTabPanel>
+</MudTabs>
 
-<h3>Admin</h3>
+@code {
+    private string _searchString = "";
+    private MudTable<Log> _table = null!;
+    
+    private async Task<TableData<Log>> ServerReload(TableState state, CancellationToken token)
+    {
+        IEnumerable<Log> data = Pg.Logs;
+        data = data.Where(o =>
+        {
+            return $"{o.Timestamp} {o.Name} {o.ClientIp} {o.Message}".Contains(_searchString);
+        }).ToArray();
+        var totalItems = data.Count();
+        switch (state.SortLabel)
+        {
+            case "Timestamp":
+                data = data.OrderByDirection(state.SortDirection, o => o.Timestamp);
+                break;
+            case "Name":
+                data = data.OrderByDirection(state.SortDirection, o => o.Name);
+                break;
+            case "ClientIp":
+                data = data.OrderByDirection(state.SortDirection, o => o.ClientIp);
+                break;
+            case "Message":
+                data = data.OrderByDirection(state.SortDirection, o => o.Message);
+                break;
+        }
+
+        
+        var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+        return new TableData<Log>() {TotalItems = totalItems, Items = pagedData};
+    }
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        _table.ReloadServerData();
+    }
+}
