@@ -16,6 +16,8 @@ public class LogEvent
     public string? ClientIp { get; set; }
     public string? RequestMethod { get; set; }
     public string? RequestPath { get; set; }
+    public string? HttpMethod { get; set; }
+    public string? Uri { get; set; }
     public int? StatusCode { get; set; }
     public string? Message { get; set; }
     public LokiException? Exception { get; set; }

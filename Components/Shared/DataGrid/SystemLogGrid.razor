@@ -1,0 +1,78 @@
+@using System.Text.Json
+@using BlazorApp1.Entities
+@using BlazorApp1.Services
+@inject LokiService LokiService
+
+<MudDataGrid @ref="_grid" T="LogEvent" ServerData="ServerReload" Elevation="0" Dense="true"
+                     Class="d-flex flex-column h-full" ContainerClass="h-full"
+                     FixedHeader="true" Height="100%" Hover="true"
+                     ColumnResizeMode="ResizeMode.Container"
+                     Filterable="true" FilterMode="DataGridFilterMode.Simple"
+                     ShowMenuIcon="true" Hideable="true" ShowColumnOptions="false" 
+                     SortMode="SortMode.Single" RowClass="nowrap" Breakpoint="Breakpoint.None" >
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">System Logs | Loki <MudIconButton Href="http://francis2:3000" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
+                <MudSpacer/>
+                <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn Property="x => x.EventDate" Title="EventDate" Resizable="true" InitialDirection="SortDirection.Descending" />
+                <PropertyColumn Property="x => x.Level" Title="Level" Resizable="true" />
+                <PropertyColumn Property="x => x.RequestMethod" Title="RequestMethod" Resizable="true" />
+                <PropertyColumn Property="x => x.RequestPath" Title="RequestPath" Resizable="true" />
+                <PropertyColumn Property="x => x.StatusCode" Title="StatusCode" Resizable="true" />
+                <PropertyColumn Property="x => x.HttpMethod" Title="HttpMethod" Resizable="true" />
+                <PropertyColumn Property="x => x.Uri" Title="Uri" Resizable="true" />
+                <PropertyColumn Property="x => x.Name" Title="Name" Resizable="true" />
+                <PropertyColumn Property="x => x.PreferredUsername" Title="PreferredUsername" Resizable="true" />
+                <PropertyColumn Property="x => x.ClientIp" Title="ClientIp" Resizable="true" />
+                <PropertyColumn Property="x => x.MachineName" Title="MachineName" Resizable="true" Hidden="true"/>
+                <PropertyColumn Property="x => x.UserAgent" Title="UserAgent" Resizable="true" Hidden="true"/>
+                <PropertyColumn Property="x => x.Message" Title="Message" Resizable="true" Hidden="true"/>
+                <PropertyColumn Property="x => x.ExceptionMessage" Title="Exception" Resizable="true" />
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="LogEvent" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
+            </PagerContent>
+        </MudDataGrid>
+
+@code {
+    private string _searchString = "";
+    private MudDataGrid<LogEvent> _grid = null!;
+    
+    private async Task<GridData<LogEvent>> ServerReload(GridState<LogEvent> state, CancellationToken token = default)
+    {
+        IEnumerable<LogEvent> data = await LokiService.RunQueryRange(token);
+        
+        data = data.Where(o =>
+        {
+            // TODO: do **ANYTHING** but this.
+            return $"{JsonSerializer.Serialize(o).ToLower()}".Contains(_searchString.ToLower());
+        }).ToArray();
+        
+        if (state.SortDefinitions.Any())
+        {
+            var firstSort = state.SortDefinitions.First();
+            data = firstSort.Descending
+                ? data.OrderByDescending(firstSort.SortFunc).ToList()
+                : data.OrderBy(firstSort.SortFunc).ToList();
+        }
+        if (state.FilterDefinitions.Any())
+        {
+            var filterFunctions = state.FilterDefinitions.Select(f => f.GenerateFilterFunction());
+            data = data
+                .Where(o => filterFunctions.All(f => f(o)))
+                .ToList();
+        }
+        var totalItems = data.Count();
+
+        var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+        return new GridData<LogEvent> {TotalItems = totalItems, Items = pagedData};
+    }
+    private void OnSearch(string text)
+    {
+        _searchString = text;
+        _grid.ReloadServerData();
+    }
+}

@@ -1,9 +1,10 @@
 @page "/admin"
-@using BlazorApp1.Context
 @using BlazorApp1.Entities
 @using Microsoft.AspNetCore.Authorization
 @using System.Text.Json
-@inject PostgresContext Pg
+@using BlazorApp1.Components.Shared.DataGrid
+@using BlazorApp1.Services
+@inject LokiService LokiService
 @attribute [Authorize]
 @* @attribute [Authorize(Roles="God")] *@
 <style>
@@ -22,71 +23,14 @@
         outline-offset: -1px; }*/
 </style>
 <MudTabs Border="true" Class="overflow-hidden" Style="height:100%" TabPanelsClass="overflow-scroll d-flex h-full">
-    <MudTabPanel Text="Audit" Style="width:100%;height:100%">
-        <MudDataGrid @ref="_grid" T="AuditEvent" ServerData="ServerReload" Elevation="0" Dense="true"
-                     Class="d-flex flex-column h-full" ContainerClass="h-full"
-                     FixedHeader="true" Height="100%" Hover="true"
-                     ColumnResizeMode="ResizeMode.Container"
-                     Filterable="true" FilterMode="DataGridFilterMode.ColumnFilterMenu"
-                     ShowMenuIcon="true" Hideable="true" ShowColumnOptions="false" 
-                     SortMode="SortMode.Single" RowClass="nowrap" Breakpoint="Breakpoint.None" >
-            <ToolBarContent>
-                <MudText Typo="Typo.h6">Audit Logs | PostgreSQL</MudText>
-                <MudSpacer/>
-                <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-            </ToolBarContent>
-            <Columns>
-                <PropertyColumn Property="x => x.EventDate" Title="EventDate" Resizable="true" InitialDirection="SortDirection.Descending" />
-                <PropertyColumn Property="x => x.EventType" Title="EventType" Resizable="true" />
-                <PropertyColumn Property="x => x.Name" Title="Name" Resizable="true" />
-                <PropertyColumn Property="x => x.PreferredUsername" Title="PreferredUsername" Resizable="true" />
-                <PropertyColumn Property="x => x.ClientIp" Title="ClientIp" Resizable="true" />
-                <PropertyColumn Property="x => x.MachineName" Title="MachineName" Resizable="true" />
-                <PropertyColumn Property="x => x.UserAgent" Title="UserAgent" Resizable="true" />
-            </Columns>
-            <PagerContent>
-                <MudDataGridPager T="AuditEvent" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
-            </PagerContent>
-        </MudDataGrid>
+    <MudTabPanel Text="Audit Monitor" Style="width:100%;height:100%">
+        <AuditLogGrid />
+    </MudTabPanel>
+    <MudTabPanel Text="System Monitor" Style="width:100%;height:100%">
+        <SystemLogGrid />
     </MudTabPanel>
 </MudTabs>
 
 @code {
-    private string _searchString = "";
-    private MudDataGrid<AuditEvent> _grid = null!;
-    
-    private async Task<GridData<AuditEvent>> ServerReload(GridState<AuditEvent> state, CancellationToken token = default)
-    {
-        IEnumerable<AuditEvent> data = Pg.AuditEvents;
-        data = data.Where(o =>
-        {
-            // TODO: do **ANYTHING** but this.
-            return $"{JsonSerializer.Serialize(o).ToLower()}".Contains(_searchString.ToLower());
-        }).ToArray();
-        
-        if (state.SortDefinitions.Any())
-        {
-            var firstSort = state.SortDefinitions.First();
-            data = firstSort.Descending
-                ? data.OrderByDescending(firstSort.SortFunc).ToList()
-                : data.OrderBy(firstSort.SortFunc).ToList();
-        }
-        if (state.FilterDefinitions.Any())
-        {
-            var filterFunctions = state.FilterDefinitions.Select(f => f.GenerateFilterFunction());
-            data = data
-                .Where(o => filterFunctions.All(f => f(o)))
-                .ToList();
-        }
-        var totalItems = data.Count();
 
-        var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
-        return new GridData<AuditEvent> {TotalItems = totalItems, Items = pagedData};
-    }
-    private void OnSearch(string text)
-    {
-        _searchString = text;
-        _grid.ReloadServerData();
-    }
 }
