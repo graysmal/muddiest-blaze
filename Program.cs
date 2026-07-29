@@ -1,6 +1,7 @@
 using Audit.Core;
 using BlazorApp1.Components;
 using BlazorApp1.Context;
+using BlazorApp1.Services;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,7 @@ builder.Services.AddSerilog(lc => lc
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .WriteTo.Console()
     .WriteTo.File(
-        builder.Configuration.GetValue<string>("Logging:Path")??"app.log", 
+        builder.Configuration.GetValue<string>("Logging:Path")??"./Logs/app.log", 
         rollingInterval: RollingInterval.Day, retainedFileCountLimit:14, outputTemplate:fileOutputTemplate)
     .WriteTo.GrafanaLoki(
         builder.Configuration.GetValue<string>("Loki:uri"), 
@@ -105,6 +106,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+builder.Services.AddHttpClient<LokiService>();
 
 builder.Services.AddDbContextFactory<PostgresContext>(options => 
     options.UseNpgsql(
