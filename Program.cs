@@ -1,3 +1,4 @@
+using Audit.Core;
 using BlazorApp1.Components;
 using BlazorApp1.Context;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -14,37 +15,21 @@ using Serilog.Events;
 using Serilog.Sinks.Grafana.Loki;
 using System.Security.Claims;
 
-
-// gets Name and preferred_username claims for OIDC log events.
-static (string? Name, string? PreferredUsername) GetLoggingClaims(ClaimsPrincipal? principal)
-{
-    if (principal?.Identity?.IsAuthenticated != true)
-        return (null, null);
-
-    var name = principal.FindFirst("name")?.Value;
-    var preferredUsername = principal.FindFirst("preferred_username")?.Value;
-    return (name, preferredUsername);
-}
-
 var builder = WebApplication.CreateBuilder(args);
 
 // https://codewithmukesh.com/blog/structured-logging-with-serilog-in-aspnet-core/
-// https://github.com/b00ted/serilog-sinks-postgresql
 // https://github.com/serilog-contrib/serilog-sinks-grafana-loki
-// used fluent api rather than appsettings.json because the json object is pretty gross,
+// used fluent api rather than appsettings.json because the json serilog object is pretty gross,
 // and there are likely not many changes to be made to these settings per deployment.
 
-var levelSwitch =
-    new LoggingLevelSwitch(builder.Configuration.GetValue("Logging:MinimumLevel", LogEventLevel.Information));
-
 const string fileOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Name} ({preferred_username}, {ClientIp}, {MachineName}) trace:{TraceId} req:{RequestId} {Message:lj}{NewLine}{Exception}";
-builder.Services.AddSerilog((services, lc) => lc
-    .MinimumLevel.ControlledBy(levelSwitch)
+builder.Services.AddSerilog(lc => lc
+    .MinimumLevel.ControlledBy(new LoggingLevelSwitch(builder.Configuration.GetValue("Logging:MinimumLevel", LogEventLevel.Information)))
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .WriteTo.Console()
     .WriteTo.File(
-        "./logs/muddiest.log", rollingInterval: RollingInterval.Day, 
-        retainedFileCountLimit:null, outputTemplate:fileOutputTemplate)
+        builder.Configuration.GetValue<string>("Logging:Path")??"app.log", 
+        rollingInterval: RollingInterval.Day, retainedFileCountLimit:14, outputTemplate:fileOutputTemplate)
     .WriteTo.GrafanaLoki(
         builder.Configuration.GetValue<string>("Loki:uri"), 
         [new LokiLabel { Key="app", Value="web_app"}])
@@ -65,21 +50,18 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
         {
             OnRedirectToIdentityProvider = context =>
             {
-                // no name specified at this point.
-                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User attempting login.");
+                using (var auditScope = AuditScope.Create("OIDC:LoginAttempt", () => new {})) { }
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
-                var (name, preferredUsername) = GetLoggingClaims(context.Principal);
-                var diagnosticContext = context.HttpContext.RequestServices.GetRequiredService<IDiagnosticContext>();
-                diagnosticContext.Set("Name", name);
-                diagnosticContext.Set("preferred_username", preferredUsername);
-                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User {Name} ({preferred_username}) successfully logged in.", name, preferredUsername);
+                context.HttpContext.User = context.Principal!;
+                using (var auditScope = AuditScope.Create("OIDC:LoginSuccess", () => new {})) { }
                 return Task.CompletedTask;
             },
             OnAuthenticationFailed = context =>
             {
+                using (var auditScope = AuditScope.Create("OIDC:LoginFailed", () => new {})) { }
                 context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogError("Authentication failed: {Error}", context.Exception.Message);
                 return Task.CompletedTask;
             },
@@ -88,14 +70,13 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
                 // log only is made if there is an actual user requesting logout; null can be thrown out.
                 // this event triggers twice when a user logs out, once as the identity and once as null.
                 var (name, preferredUsername) = GetLoggingClaims(context.HttpContext.User);
-                if (name is not null || preferredUsername is not null) 
-                {
-                    context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User {Name} ({preferredUsername}) requested logout.", name, preferredUsername);
-                }
+                if (name is null && preferredUsername is null) return Task.CompletedTask;
+                using (var auditScope = AuditScope.Create("OIDC:LogoutRequest", () => new {})) { }
                 return Task.CompletedTask;
             },
             OnSignedOutCallbackRedirect = context =>
             {
+                using (var auditScope = AuditScope.Create("OIDC:LogoutSuccess", () => new {})) { }
                 context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User successfully logged out.");
                 return Task.CompletedTask;
             }
@@ -105,12 +86,13 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddMudServices();
-builder.Services.AddAuthorization();
-builder.Services.AddControllersWithViews()
+builder.Services.AddMudServices()
+    .AddAuthorization()
+    .AddControllersWithViews()
     .AddMicrosoftIdentityUI();
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddHttpContextAccessor();
+var httpContextAccessor = new HttpContextAccessor(); // create httpcontext to share between service and Audit.Configuration.
+builder.Services.AddSingleton<IHttpContextAccessor>(httpContextAccessor);
 
 // https://stackoverflow.com/questions/43749236/net-core-x-forwarded-proto-not-working
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -123,10 +105,37 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+
 builder.Services.AddDbContextFactory<PostgresContext>(options => 
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("PostgreSQL") ??
         throw new InvalidOperationException("PostgreSQL connection string not found.")));
+
+
+Configuration.AddCustomAction(ActionType.OnScopeCreated, scope =>
+    {
+        var httpContext = httpContextAccessor.HttpContext;
+        if (httpContext is null) return;
+        
+        var (name, preferredUsername) =  GetLoggingClaims(httpContext.User);
+        scope.SetCustomField("name", name);
+        scope.SetCustomField("preferred_username", preferredUsername);
+        scope.SetCustomField("client_ip", httpContext.Connection.RemoteIpAddress?.ToString());
+        scope.SetCustomField("machine_name", Environment.MachineName);
+        scope.SetCustomField("user_agent", httpContext.Request.Headers.UserAgent.ToString());
+    });
+Configuration.Setup()
+    .UsePostgreSql(config => config
+        .ConnectionString(builder.Configuration.GetConnectionString("PostgreSQL"))
+        .TableName("audit_event")
+        .CustomColumn("event_date", ev => ev.StartDate)
+        .CustomColumn("event_type", ev => ev.EventType)
+        .CustomColumn("name", ev => ev.CustomFields["name"])
+        .CustomColumn("preferred_username", ev => ev.CustomFields["preferred_username"])
+        .CustomColumn("client_ip", ev => ev.CustomFields["client_ip"])
+        .CustomColumn("machine_name", ev => ev.CustomFields["machine_name"])
+        .CustomColumn("user_agent", ev => ev.CustomFields["user_agent"])
+    );
 
 var app = builder.Build();
 app.UseForwardedHeaders();
@@ -150,3 +159,15 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+return;
+
+// gets Name and preferred_username claims for OIDC log events.
+static (string? Name, string? PreferredUsername) GetLoggingClaims(ClaimsPrincipal? principal)
+{
+    if (principal?.Identity?.IsAuthenticated != true)
+        return (null, null);
+
+    var name = principal.FindFirst("name")?.Value;
+    var preferredUsername = principal.FindFirst("preferred_username")?.Value;
+    return (name, preferredUsername);
+}
