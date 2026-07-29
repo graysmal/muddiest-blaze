@@ -22,8 +22,8 @@
         outline-offset: -1px; }*/
 </style>
 <MudTabs Border="true" Class="overflow-hidden" Style="height:100%" TabPanelsClass="overflow-scroll d-flex h-full">
-    <MudTabPanel Text="Monitor" Style="width:100%;height:100%">
-        <MudDataGrid @ref="_grid" T="Log" ServerData="ServerReload" Elevation="0" Dense="true"
+    <MudTabPanel Text="Audit" Style="width:100%;height:100%">
+        <MudDataGrid @ref="_grid" T="AuditEvent" ServerData="ServerReload" Elevation="0" Dense="true"
                      Class="d-flex flex-column h-full" ContainerClass="h-full"
                      FixedHeader="true" Height="100%" Hover="true"
                      ColumnResizeMode="ResizeMode.Container"
@@ -31,29 +31,22 @@
                      ShowMenuIcon="true" Hideable="true" ShowColumnOptions="false" 
                      SortMode="SortMode.Single" RowClass="nowrap" Breakpoint="Breakpoint.None" >
             <ToolBarContent>
-                <MudText Typo="Typo.h6">System Logs</MudText>
+                <MudText Typo="Typo.h6">Audit Logs | PostgreSQL</MudText>
                 <MudSpacer/>
                 <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
             </ToolBarContent>
             <Columns>
-                <PropertyColumn Property="x => x.Timestamp" Title="Timestamp" Resizable="true" InitialDirection="SortDirection.Descending" />
-                <PropertyColumn Property="x => x.Level" Title="Message" Resizable="true" />
+                <PropertyColumn Property="x => x.EventDate" Title="EventDate" Resizable="true" InitialDirection="SortDirection.Descending" />
+                <PropertyColumn Property="x => x.EventType" Title="EventType" Resizable="true" />
                 <PropertyColumn Property="x => x.Name" Title="Name" Resizable="true" />
                 <PropertyColumn Property="x => x.PreferredUsername" Title="PreferredUsername" Resizable="true" />
                 <PropertyColumn Property="x => x.ClientIp" Title="ClientIp" Resizable="true" />
-                <PropertyColumn Property="x => x.MachineName" Title="MachineName" Resizable="true" Hidden="true" />
-                <PropertyColumn Property="x => x.UserAgent" Title="UserAgent" Resizable="true" Hidden="true" />
-                <PropertyColumn Property="x => x.RequestMethod" Title="RequestMethod" Resizable="true" Hidden="true" />
-                <PropertyColumn Property="x => x.RequestPath" Title="RequestPath" Resizable="true" Hidden="true" />
-                <PropertyColumn Property="x => x.StatusCode" Title="StatusCode" Resizable="true" Hidden="true" />
-                <PropertyColumn Property="x => x.Message" Title="Message" Resizable="true" />
-                <PropertyColumn Property="x => x.Exception" Class="wrap" Title="Exception" Resizable="true" Hidden="true" />
-                <PropertyColumn Property="x => x.RequestId" Title="RequestId" Resizable="true" Hidden="true" />
-                <PropertyColumn Property="x => x.TraceId" Title="TraceId" Resizable="true" Hidden="true" />
+                <PropertyColumn Property="x => x.MachineName" Title="MachineName" Resizable="true" />
+                <PropertyColumn Property="x => x.UserAgent" Title="UserAgent" Resizable="true" />
             </Columns>
             <PagerContent>
-                <MudDataGridPager T="Log" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
+                <MudDataGridPager T="AuditEvent" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
             </PagerContent>
         </MudDataGrid>
     </MudTabPanel>
@@ -61,11 +54,11 @@
 
 @code {
     private string _searchString = "";
-    private MudDataGrid<Log> _grid = null!;
+    private MudDataGrid<AuditEvent> _grid = null!;
     
-    private async Task<GridData<Log>> ServerReload(GridState<Log> state, CancellationToken token = default)
+    private async Task<GridData<AuditEvent>> ServerReload(GridState<AuditEvent> state, CancellationToken token = default)
     {
-        IEnumerable<Log> data = Pg.Logs;
+        IEnumerable<AuditEvent> data = Pg.AuditEvents;
         data = data.Where(o =>
         {
             // TODO: do **ANYTHING** but this.
@@ -89,7 +82,7 @@
         var totalItems = data.Count();
 
         var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
-        return new GridData<Log> {TotalItems = totalItems, Items = pagedData};
+        return new GridData<AuditEvent> {TotalItems = totalItems, Items = pagedData};
     }
     private void OnSearch(string text)
     {
