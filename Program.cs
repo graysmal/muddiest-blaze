@@ -147,7 +147,13 @@ Configuration.Setup()
 
 var app = builder.Build();
 app.UseForwardedHeaders();
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(options =>
+{
+    options.GetLevel = (httpContext, _, _) =>
+        httpContext.Request.Path.StartsWithSegments("/metrics")
+            ? LogEventLevel.Verbose
+            : LogEventLevel.Information;
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -165,6 +171,7 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseHttpMetrics();
 app.MapMetrics();
 app.MapControllers();
 app.Run();
