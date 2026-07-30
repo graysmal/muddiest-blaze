@@ -20,9 +20,11 @@ public class LokiService
     public async Task<List<LogEvent>> RunQueryRange(LokiQueryOptions options, CancellationToken token)
     {
         List<LogEvent> data = [];
-        await using (await AuditScope.CreateAsync("Loki:Read", () => new { }, cancellationToken: token))
+        await using (var auditScope = await AuditScope.CreateAsync("Loki:QueryRange", () => new { }, cancellationToken: token))
         {
-            var url = $"/loki/api/v1/query_range{options.ToQueryString()}";
+            var queryString = options.ToQueryString(); 
+            auditScope.SetCustomField("query", queryString);
+            var url = $"/loki/api/v1/query_range{queryString}";
             var response = await _httpClient.GetAsync(url, token);
             var lokiResponse = await response.Content.ReadFromJsonAsync<LokiResponse>(token);
             foreach (var result in lokiResponse!.Data.Result)
