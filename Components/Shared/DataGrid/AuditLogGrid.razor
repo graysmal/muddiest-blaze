@@ -2,6 +2,7 @@
 @using BlazorApp1.Entities
 @using System.Text.Json
 @inject PostgresContext Pg
+@inject IConfiguration Configuration
 
 <MudDataGrid @ref="_grid" T="AuditEvent" ServerData="ServerReload" Elevation="0" Dense="true"
              Class="d-flex flex-column h-full" ContainerClass="h-full"
@@ -11,7 +12,7 @@
              ShowMenuIcon="true" Hideable="true" ShowColumnOptions="false" 
              SortMode="SortMode.Single" RowClass="nowrap" Breakpoint="Breakpoint.None" >
     <ToolBarContent>
-        <MudText Typo="Typo.h6">Audit Logs | PostgreSQL <MudIconButton Href="http://francis2:3000" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
+        <MudText Typo="Typo.h6">Audit Logs | PostgreSQL <MudIconButton Href="@($"{Configuration.GetValue<string>("Grafana:uri")}")" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
         <MudSpacer/>
         <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
                       AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>

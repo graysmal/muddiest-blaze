@@ -106,12 +106,17 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-builder.Services.AddHttpClient<LokiService>();
+builder.Services.AddHttpClient<LokiService>((services, client) =>
+{
+    var uri = services.GetRequiredService<IConfiguration>().GetValue<string>("Loki:uri")
+        ?? throw new InvalidOperationException("Loki:uri not configured.");
+    client.BaseAddress = new Uri(uri);
+});
 
 builder.Services.AddDbContextFactory<PostgresContext>(options => 
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("PostgreSQL") ??
-        throw new InvalidOperationException("PostgreSQL connection string not found.")));
+        throw new InvalidOperationException("PostgreSQL connection string not configured.")));
 
 
 Configuration.AddCustomAction(ActionType.OnScopeCreated, scope =>

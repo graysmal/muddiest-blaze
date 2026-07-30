@@ -2,22 +2,25 @@
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
 @inject LokiService LokiService
+@inject IConfiguration Configuration
 
 <MudDataGrid @ref="_grid" T="LogEvent" ServerData="ServerReload" Elevation="0" Dense="true"
                      Class="d-flex flex-column h-full" ContainerClass="h-full"
                      FixedHeader="true" Height="100%" Hover="true"
                      ColumnResizeMode="ResizeMode.Container"
-                     Filterable="true" FilterMode="DataGridFilterMode.Simple"
+                     Filterable="false"
                      ShowMenuIcon="true" Hideable="true" ShowColumnOptions="false" 
-                     SortMode="SortMode.Single" RowClass="nowrap" Breakpoint="Breakpoint.None" >
+                     SortMode="SortMode.None" RowClass="nowrap" Breakpoint="Breakpoint.None" >
             <ToolBarContent>
-                <MudText Typo="Typo.h6">System Logs | Loki <MudIconButton Href="http://francis2:3000" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
+                <MudText Typo="Typo.h6">System Logs | Loki <MudIconButton Href="@($"{Configuration.GetValue<string>("Grafana:uri")}")" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
+                <MudSpacer/>
+                <MudDateRangePicker DateRange="_dateRange" DateRangeChanged="@(d => OnDateRangePick(d))" Label="Range" PlaceholderStart="Start Date" PlaceholderEnd="End Date" ></MudDateRangePicker>
                 <MudSpacer/>
                 <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
             </ToolBarContent>
             <Columns>
-                <PropertyColumn Property="x => x.EventDate" Title="EventDate" Resizable="true" InitialDirection="SortDirection.Descending" />
+                <PropertyColumn Property="x => x.EventDate" Title="EventDate" Resizable="true" InitialDirection="SortDirection.Descending" Sortable="true" />
                 <PropertyColumn Property="x => x.Level" Title="Level" Resizable="true" />
                 <PropertyColumn Property="x => x.RequestMethod" Title="RequestMethod" Resizable="true" />
                 <PropertyColumn Property="x => x.RequestPath" Title="RequestPath" Resizable="true" />
@@ -39,18 +42,22 @@
 
 @code {
     private string _searchString = "";
+    private DateRange _dateRange = new(DateTime.Now.AddDays(-7), DateTime.Now);
     private MudDataGrid<LogEvent> _grid = null!;
     
     private async Task<GridData<LogEvent>> ServerReload(GridState<LogEvent> state, CancellationToken token = default)
     {
-        IEnumerable<LogEvent> data = await LokiService.RunQueryRange(token);
-        
-        data = data.Where(o =>
+        var query = "{app=\"web_app\"}";
+        query += _searchString.Length > 0 ? $" |= \"{_searchString}\"" : "";
+        var options = new LokiQueryOptions
         {
-            // TODO: do **ANYTHING** but this.
-            return $"{JsonSerializer.Serialize(o).ToLower()}".Contains(_searchString.ToLower());
-        }).ToArray();
+            Query = query,
+            Start = _dateRange.Start,
+            End = _dateRange.End!.Value.AddDays(1), // to midnight of End date.
+            Limit = 5000
+        };
         
+        IEnumerable<LogEvent> data = await LokiService.RunQueryRange(options, token);
         if (state.SortDefinitions.Any())
         {
             var firstSort = state.SortDefinitions.First();
@@ -75,4 +82,11 @@
         _searchString = text;
         _grid.ReloadServerData();
     }
+
+    private void OnDateRangePick(DateRange dateRange)
+    {
+        _dateRange = dateRange;
+        _grid.ReloadServerData();
+    }
+
 }

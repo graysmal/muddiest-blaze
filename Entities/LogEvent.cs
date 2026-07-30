@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using BlazorApp1.Services;
 
 namespace BlazorApp1.Entities;
 
@@ -22,30 +23,4 @@ public class LogEvent
     public string? Message { get; set; }
     public LokiException? Exception { get; set; }
     public string? ExceptionMessage { get; set; }
-}
-
-public class LokiResponse
-{
-    public LokiData Data { get; set; }
-}
-
-public class LokiData
-{
-    public List<LokiResult> Result { get; set; }
-}
-
-public class LokiResult
-{
-    public LokiStream Stream { get; set; }
-    public List<List<string>> Values { get; set; }   
-}
-
-public class LokiStream
-{
-    public string Level { get; set; }
-}
-
-public class LokiException
-{
-    public string Message { get; set; }
 }
