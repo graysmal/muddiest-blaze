@@ -8,19 +8,19 @@ public class LogEvent
 {
     public DateTime EventDate { get; set; }
     public string? Level { get; set; }
-    public string? Name { get; set; }
+    public string? Name { get; init; }
     
     [JsonPropertyName("preferred_username")]
-    public string? PreferredUsername { get; set; }
-    public string? MachineName { get; set; }
-    public string? UserAgent { get; set; }
-    public string? ClientIp { get; set; }
-    public string? RequestMethod { get; set; }
-    public string? RequestPath { get; set; }
-    public string? HttpMethod { get; set; }
-    public string? Uri { get; set; }
-    public int? StatusCode { get; set; }
-    public string? Message { get; set; }
-    public LokiException? Exception { get; set; }
+    public string? PreferredUsername { get; init; }
+    public string? MachineName { get; init; }
+    public string? UserAgent { get; init; }
+    public string? ClientIp { get; init; }
+    public string? RequestMethod { get; init; }
+    public string? RequestPath { get; init; }
+    public string? HttpMethod { get; init; }
+    public string? Uri { get; init; }
+    public int? StatusCode { get; init; }
+    public string? Message { get; init; }
+    public LokiException? Exception { get; init; }
     public string? ExceptionMessage { get; set; }
 }

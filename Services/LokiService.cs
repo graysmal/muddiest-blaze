@@ -2,6 +2,8 @@ using Audit.Core;
 using BlazorApp1.Entities;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
+// ReSharper disable ClassNeverInstantiated.Global
+// ReSharper disable CollectionNeverUpdated.Global
 
 namespace BlazorApp1.Services;
 
@@ -47,10 +49,10 @@ public class LokiService
 
 public class LokiQueryOptions
 {
-    public required string Query { get; set; }
-    public DateTimeOffset? Start { get; set; }
-    public DateTimeOffset? End { get; set; }
-    public int Limit { get; set; } = 100;
+    public required string Query { get; init; }
+    public DateTimeOffset? Start { get; init; }
+    public DateTimeOffset? End { get; init; }
+    public int Limit { get; init; } = 100;
     public string Direction { get; set; } = "backward";
 
     public string ToQueryString()
@@ -71,27 +73,27 @@ public class LokiQueryOptions
 
 public class LokiResponse
 {
-    public LokiData Data { get; set; }
+    public required LokiData Data { get; init; }
 }
 
 public class LokiData
 {
-    public List<LokiResult> Result { get; set; }
+    public required List<LokiResult> Result { get; set; }
 }
 
 public class LokiResult
 {
-    public LokiStream Stream { get; set; }
-    public List<List<string>> Values { get; set; }   
+    public required LokiStream Stream { get; set; }
+    public required List<List<string>> Values { get; set; }   
 }
 
 public class LokiStream
 {
-    public string Level { get; set; }
+    public required string Level { get; set; }
 }
 
 public class LokiException
 {
-    public string Message { get; set; }
+    public required string Message { get; set; }
 }
 

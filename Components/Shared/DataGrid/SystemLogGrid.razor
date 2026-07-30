@@ -1,11 +1,10 @@
-@using System.Text.Json
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
 @inject LokiService LokiService
 @inject IConfiguration Configuration
 
 <MudDataGrid @ref="_grid" T="LogEvent" ServerData="ServerReload" Elevation="0" Dense="true"
-                     Class="d-flex flex-column h-full" ContainerClass="h-full"
+                     Class="d-flex flex-column h-full"
                      FixedHeader="true" Height="100%" Hover="true"
                      ColumnResizeMode="ResizeMode.Container"
                      Filterable="false"
@@ -14,9 +13,9 @@
             <ToolBarContent>
                 <MudText Typo="Typo.h6">System Logs | Loki <MudIconButton Href="@($"{Configuration.GetValue<string>("Grafana:uri")}")" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
                 <MudSpacer/>
-                <MudDateRangePicker DateRange="_dateRange" DateRangeChanged="@(d => OnDateRangePick(d))" Label="Range" PlaceholderStart="Start Date" PlaceholderEnd="End Date" ></MudDateRangePicker>
+                <MudDateRangePicker DateRange="_dateRange" DateRangeChanged="@(d => OnDateRangePick(d!))" Label="Range" PlaceholderStart="Start Date" PlaceholderEnd="End Date" ></MudDateRangePicker>
                 <MudSpacer/>
-                <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
+                <MudTextField T="string" ValueChanged="@(s=>OnSearch(s!))" Placeholder="Search" Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
             </ToolBarContent>
             <Columns>

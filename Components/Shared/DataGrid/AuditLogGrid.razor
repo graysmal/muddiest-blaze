@@ -1,11 +1,10 @@
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
-@using System.Text.Json
 @inject PostgresContext Pg
 @inject IConfiguration Configuration
 
 <MudDataGrid @ref="_grid" T="AuditEvent" ServerData="ServerReload" Elevation="0" Dense="true"
-             Class="d-flex flex-column h-full" ContainerClass="h-full"
+             Class="d-flex flex-column h-full"
              FixedHeader="true" Height="100%" Hover="true"
              ColumnResizeMode="ResizeMode.Container"
              Filterable="true" FilterMode="DataGridFilterMode.ColumnFilterMenu"
@@ -14,11 +13,11 @@
     <ToolBarContent>
         <MudText Typo="Typo.h6">Audit Logs | PostgreSQL <MudIconButton Href="@($"{Configuration.GetValue<string>("Grafana:uri")}")" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
         <MudSpacer/>
-        <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search" Adornment="Adornment.Start"
+        <MudTextField T="string" ValueChanged="@(s=>OnSearch(s!))" Placeholder="Search" Adornment="Adornment.Start"
                       AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
     </ToolBarContent>
     <Columns>
-        <PropertyColumn Property="x => x.EventDate" Title="EventDate" Resizable="true" InitialDirection="SortDirection.Descending" />
+        <PropertyColumn Property="x => x.EventDate.ToLocalTime()" Title="EventDate" Resizable="true" InitialDirection="SortDirection.Descending" />
         <PropertyColumn Property="x => x.EventType" Title="EventType" Resizable="true" />
         <PropertyColumn Property="x => x.Name" Title="Name" Resizable="true" />
         <PropertyColumn Property="x => x.PreferredUsername" Title="PreferredUsername" Resizable="true" />
@@ -38,11 +37,7 @@
     private async Task<GridData<AuditEvent>> ServerReload(GridState<AuditEvent> state, CancellationToken token = default)
     {
         IEnumerable<AuditEvent> data = Pg.AuditEvents;
-        data = data.Where(o =>
-        {
-            // TODO: do **ANYTHING** but this.
-            return $"{JsonSerializer.Serialize(o).ToLower()}".Contains(_searchString.ToLower());
-        }).ToArray();
+        data = data.Where(o => $"{o.EventDate.ToShortDateString()} {o.EventType} {o.Name} {o.PreferredUsername} {o.ClientIp} {o.MachineName} {o.UserAgent}".ToLower().Contains(_searchString.ToLower())).ToArray();
         
         if (state.SortDefinitions.Any())
         {
