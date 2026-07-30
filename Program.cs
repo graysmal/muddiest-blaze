@@ -49,20 +49,20 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
         builder.Configuration.GetSection("AzureAd").Bind(opts);
         opts.Events = new OpenIdConnectEvents
         {
-            OnRedirectToIdentityProvider = context =>
+            OnRedirectToIdentityProvider = _ =>
             {
-                using (var auditScope = AuditScope.Create("OIDC:LoginAttempt", () => new {})) { }
+                using (AuditScope.Create("OIDC:LoginAttempt", () => new {})) { }
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
                 context.HttpContext.User = context.Principal!;
-                using (var auditScope = AuditScope.Create("OIDC:LoginSuccess", () => new {})) { }
+                using (AuditScope.Create("OIDC:LoginSuccess", () => new {})) { }
                 return Task.CompletedTask;
             },
             OnAuthenticationFailed = context =>
             {
-                using (var auditScope = AuditScope.Create("OIDC:LoginFailed", () => new {})) { }
+                using (AuditScope.Create("OIDC:LoginFailed", () => new {})) { }
                 context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogError("Authentication failed: {Error}", context.Exception.Message);
                 return Task.CompletedTask;
             },
@@ -72,12 +72,12 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
                 // this event triggers twice when a user logs out, once as the identity and once as null.
                 var (name, preferredUsername) = GetLoggingClaims(context.HttpContext.User);
                 if (name is null && preferredUsername is null) return Task.CompletedTask;
-                using (var auditScope = AuditScope.Create("OIDC:LogoutRequest", () => new {})) { }
+                using (AuditScope.Create("OIDC:LogoutRequest", () => new {})) { }
                 return Task.CompletedTask;
             },
             OnSignedOutCallbackRedirect = context =>
             {
-                using (var auditScope = AuditScope.Create("OIDC:LogoutSuccess", () => new {})) { }
+                using (AuditScope.Create("OIDC:LogoutSuccess", () => new {})) { }
                 context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogInformation("User successfully logged out.");
                 return Task.CompletedTask;
             }
