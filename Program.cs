@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using MudBlazor.Services;
+using Prometheus;
 using Serilog;
 using Serilog.Core;
 using Serilog.Enrichers;
@@ -164,6 +165,7 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapMetrics();
 app.MapControllers();
 app.Run();
 return;
