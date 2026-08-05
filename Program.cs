@@ -113,6 +113,7 @@ builder.Services.AddHttpClient<LokiService>((services, client) =>
         ?? throw new InvalidOperationException("Loki:uri not configured.");
     client.BaseAddress = new Uri(uri);
 });
+builder.Services.AddSingleton<PythonService>();
 
 builder.Services.AddDbContextFactory<PostgresContext>(options => 
     options.UseNpgsql(
