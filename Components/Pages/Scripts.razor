@@ -1,0 +1,28 @@
+@page "/scripts"
+@using BlazorApp1.Context
+@using BlazorApp1.Entities
+@using BlazorApp1.Services
+@inject PostgresContext Pg
+@inject PythonService Ps
+<h3>Scripts</h3>
+<MudIconButton OnClick="CreateExample" Icon="@Icons.Material.Filled.Add" />
+@foreach (var script in Pg.PythonScripts)
+{
+    <MudButton OnClick="() => Ps.Run(script)">@script.Name</MudButton>
+}
+
+@code {
+
+    private void CreateExample()
+    {
+        Pg.PythonScripts.Add(new PythonScript
+        {
+            Name = "Python Script2",
+            Content = "print('hello world')\nwith open('hello_world.txt', 'w') as file:\n    file.write('hello_world!')",
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow
+        });
+        Pg.SaveChanges();
+    }
+
+}
