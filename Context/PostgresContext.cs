@@ -17,6 +17,7 @@ public partial class PostgresContext : DbContext
     }
 
     public virtual DbSet<AuditEvent> AuditEvents { get; set; }
+    public virtual DbSet<PythonScript> PythonScripts { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseNpgsql();
@@ -36,6 +37,17 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.MachineName).HasColumnName("machine_name");
             entity.Property(e => e.UserAgent).HasColumnName("user_agent");
             entity.Property(e => e.Data).HasColumnType("jsonb").HasColumnName("data");
+        });
+        
+        modelBuilder.Entity<PythonScript>(entity =>
+        {
+            entity.ToTable("python_script");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Content).HasColumnName("content");
+            entity.Property(e => e.Created).HasColumnName("created");
+            entity.Property(e => e.Modified).HasColumnName("modified");
         });
 
         OnModelCreatingPartial(modelBuilder);
