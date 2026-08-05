@@ -18,6 +18,7 @@ public partial class PostgresContext : DbContext
 
     public virtual DbSet<AuditEvent> AuditEvents { get; set; }
     public virtual DbSet<PythonScript> PythonScripts { get; set; }
+    public virtual DbSet<PythonRun> PythonRuns { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseNpgsql();
@@ -50,6 +51,17 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Modified).HasColumnName("modified");
         });
 
+        modelBuilder.Entity<PythonRun>(entity =>
+        {
+            entity.ToTable("python_run");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ScriptId).HasColumnName("script_id");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.User).HasColumnName("user");
+            entity.Property(e => e.Started).HasColumnName("started");
+            entity.Property(e => e.Ended).HasColumnName("ended");
+        });
         OnModelCreatingPartial(modelBuilder);
     }
 
