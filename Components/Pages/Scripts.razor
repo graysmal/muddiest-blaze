@@ -8,10 +8,17 @@
 <MudIconButton OnClick="CreateExample" Icon="@Icons.Material.Filled.Add" />
 @foreach (var script in Pg.PythonScripts)
 {
-    <MudButton OnClick="() => Ps.Run(script)">@script.Name</MudButton>
+    <MudButton OnClick="() => OnRun(script)">@script.Name</MudButton>
 }
-
+<MudText>@_output</MudText>
+<MudButton Href=@($"/api/runs/{_runGuid.ToString()}/download") Target="_top">@_runGuid.ToString()</MudButton>
+@foreach (var file in _zippedFiles) {
+    <MudText>@file</MudText>
+}
 @code {
+    private string _output = "";
+    private Guid _runGuid = Guid.Empty;
+    private List<string> _zippedFiles = [];
 
     private void CreateExample()
     {
@@ -23,6 +30,30 @@
             Modified = DateTime.UtcNow
         });
         Pg.SaveChanges();
+    }
+
+    private async Task OnRun(PythonScript script)
+    {
+        _output = "";
+        await Ps.RunAsync(script, 
+            runGuid => 
+            { 
+                _runGuid = runGuid; 
+            },line =>
+            {
+                InvokeAsync(() =>
+                {
+                    _output += line + "\n";
+                    StateHasChanged();
+                });
+            }, zip =>
+            {
+                InvokeAsync(() =>
+                {
+                    _zippedFiles = zip;
+                    StateHasChanged();
+                });
+            });
     }
 
 }

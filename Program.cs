@@ -164,6 +164,15 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.MapGet("/api/runs/{id:guid}/download", async (Guid id, PostgresContext db) =>
+{
+    var run = await db.PythonRuns.FindAsync(id);
+    if (run is null) { return Results.NotFound(); }
+    var zipPath = $"{Path.GetTempPath()}Scripts/run-{id}/run-{id}-output.zip";
+    if (!File.Exists(zipPath)) { return Results.NotFound(); }
+    return Results.File(zipPath, "application/zip", $"run-{id}-output.zip");
+});
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseAntiforgery();
