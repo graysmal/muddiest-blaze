@@ -17,7 +17,6 @@ public partial class PostgresContext : DbContext
     }
 
     public virtual DbSet<AuditEvent> AuditEvents { get; set; }
-    public virtual DbSet<PythonScript> PythonScripts { get; set; }
     public virtual DbSet<PythonRun> PythonRuns { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -39,29 +38,19 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.UserAgent).HasColumnName("user_agent");
             entity.Property(e => e.Data).HasColumnType("jsonb").HasColumnName("data");
         });
-        
-        modelBuilder.Entity<PythonScript>(entity =>
-        {
-            entity.ToTable("python_script");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
-            entity.Property(e => e.Name).HasColumnName("name");
-            entity.Property(e => e.Content).HasColumnName("content");
-            entity.Property(e => e.Created).HasColumnName("created");
-            entity.Property(e => e.Modified).HasColumnName("modified");
-        });
 
         modelBuilder.Entity<PythonRun>(entity =>
         {
             entity.ToTable("python_run");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.ScriptId).HasColumnName("script_id");
+            entity.Property(e => e.ScriptName).HasColumnName("script_name");
             entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.User).HasColumnName("user");
             entity.Property(e => e.Started).HasColumnName("started");
             entity.Property(e => e.Ended).HasColumnName("ended");
         });
+        
         OnModelCreatingPartial(modelBuilder);
     }
 

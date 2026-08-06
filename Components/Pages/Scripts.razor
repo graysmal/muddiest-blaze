@@ -5,8 +5,7 @@
 @inject PostgresContext Pg
 @inject PythonService Ps
 <h3>Scripts</h3>
-<MudIconButton OnClick="CreateExample" Icon="@Icons.Material.Filled.Add" />
-@foreach (var script in Pg.PythonScripts)
+@foreach (var script in Ps.GetPythonScripts())
 {
     <MudButton OnClick="() => OnRun(script)">@script.Name</MudButton>
 }
@@ -19,18 +18,6 @@
     private string _output = "";
     private Guid _runGuid = Guid.Empty;
     private List<string> _zippedFiles = [];
-
-    private void CreateExample()
-    {
-        Pg.PythonScripts.Add(new PythonScript
-        {
-            Name = "Python Script3",
-            Content = "import time\ntime.sleep(15)\nprint('hello world')\nwith open('hello_world.txt', 'w') as file:\n    file.write('hello_world!')",
-            Created = DateTime.UtcNow,
-            Modified = DateTime.UtcNow
-        });
-        Pg.SaveChanges();
-    }
 
     private async Task OnRun(PythonScript script)
     {

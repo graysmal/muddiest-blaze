@@ -14,6 +14,16 @@ public class PythonService
     {
         _postgresContextFactory = postgresContextFactory;
     }
+    
+    public List<PythonScript> GetPythonScripts()
+    {
+        var directories = Directory.GetDirectories("./Scripts");
+        var scripts = directories.Select(d => new PythonScript
+        {
+            Name = Path.GetFileName(d)
+        });
+        return scripts.ToList();
+    }
 
     public async Task RunAsync(PythonScript script, Action<Guid>? onGuidMade = null, Action<string>? onOutputLine = null, Action<List<string>> onOutputZip = null)
     {
@@ -24,7 +34,7 @@ public class PythonService
         pg.PythonRuns.Add(new PythonRun
         {
             Id = guid,
-            ScriptId = script.Id,
+            ScriptName =  script.Name,
             Started =  DateTime.UtcNow,
             User = "test",
             Status = "Running"
@@ -32,20 +42,26 @@ public class PythonService
         await pg.SaveChangesAsync();
         
         // create temp file path and create py script
-        var pyFileDirPath = $"{Path.GetTempPath()}Scripts/run-{guid}";
-        if (!Directory.Exists(pyFileDirPath))
+        var pyRunDirPath = $"{Path.GetTempPath()}Scripts/run-{guid}";
+        if (!Directory.Exists(pyRunDirPath))
         {
-            Directory.CreateDirectory(pyFileDirPath);
+            Directory.CreateDirectory(pyRunDirPath);
         }
-        var pyFilePath = $"{pyFileDirPath}/{script.Name}.py";
-        await File.WriteAllTextAsync(pyFilePath, script.Content);
-        var preRunFiles = Directory.EnumerateFiles(pyFileDirPath).ToList();
+
+        var scriptPath = $"./Scripts/{script.Name}";
+        foreach (var file in Directory.EnumerateFiles(scriptPath))
+        {
+            File.Copy(file, Path.Combine(pyRunDirPath, Path.GetFileName(file)), true);
+        }
+
+        var pyFilePath = $"{pyRunDirPath}/script.py";
+        var preRunFiles = Directory.EnumerateFiles(pyRunDirPath).ToList();
         
         // set up process and listeners
         var proc = new Process();
         proc.StartInfo.FileName = "/usr/bin/python";
         proc.StartInfo.Arguments = $"\"{pyFilePath}\"";
-        proc.StartInfo.WorkingDirectory = pyFileDirPath;
+        proc.StartInfo.WorkingDirectory = pyRunDirPath;
         proc.StartInfo.RedirectStandardOutput = true;
         proc.StartInfo.RedirectStandardError = true;
         proc.OutputDataReceived += (s, e) =>
@@ -70,9 +86,9 @@ public class PythonService
         await pg.SaveChangesAsync();
 
         // zip up all output files and return list of files
-        var postRunFiles = Directory.EnumerateFiles(pyFileDirPath);
+        var postRunFiles = Directory.EnumerateFiles(pyRunDirPath);
         postRunFiles = postRunFiles.Where(f => !preRunFiles.Contains(f)).ToList();
-        var zipPath = $"{pyFileDirPath}/run-{guid}-output.zip";
+        var zipPath = $"{pyRunDirPath}/run-{guid}-output.zip";
         await using (var fs = new FileStream(zipPath, FileMode.Create))
         {
             await using (var archive = new ZipArchive(fs, ZipArchiveMode.Create))
