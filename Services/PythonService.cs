@@ -28,7 +28,10 @@ public class PythonService
     public async Task RunAsync(PythonScript script, Action<Guid>? onGuidMade = null, 
         Action<string>? onOutputLine = null, Action<List<string>> onOutputZip = null)
     {
-        // create run row in table
+        // create run row in pg db table
+        // TODO: set to setting up while making venv if necessary
+        // TODO: get actual user for run
+        // TODO: audit log
         var pg = await _postgresContextFactory.CreateDbContextAsync();
         var guid = Guid.NewGuid();
         onGuidMade?.Invoke(guid);
@@ -42,27 +45,9 @@ public class PythonService
         });
         await pg.SaveChangesAsync();
         
-        // create temp file path and create py script
-        var pyRunDirPath = $"{Path.GetTempPath()}Scripts/run-{guid}";
-        if (!Directory.Exists(pyRunDirPath))
-        {
-            Directory.CreateDirectory(pyRunDirPath);
-        }
-
-        var scriptPath = $"./Scripts/{script.Name}";
-        foreach (var file in Directory.EnumerateFiles(scriptPath))
-        {
-            File.Copy(file, Path.Combine(pyRunDirPath, Path.GetFileName(file)), true);
-        }
-
-        var pyFilePath = $"{pyRunDirPath}/script.py";
-        var preRunFiles = Directory.EnumerateFiles(pyRunDirPath).ToList();
-        
-        // set up process and listeners
+        // set up subprocess and output
         var proc = new Process();
-        proc.StartInfo.FileName = "/usr/bin/python";
-        proc.StartInfo.Arguments = $"\"{pyFilePath}\"";
-        proc.StartInfo.WorkingDirectory = pyRunDirPath;
+        proc.StartInfo.FileName = "/usr/bin/uv";
         proc.StartInfo.RedirectStandardOutput = true;
         proc.StartInfo.RedirectStandardError = true;
         proc.OutputDataReceived += (s, e) =>
@@ -74,11 +59,53 @@ public class PythonService
             onOutputLine?.Invoke(e.Data);
         };
         
-        // run script
+        // create virtual environment if it doesn't exist.
+        var scriptPath = $"{Directory.GetCurrentDirectory()}/Scripts/{script.Name}";
+        
+        proc.StartInfo.Arguments = "venv --allow-existing";
+        proc.StartInfo.WorkingDirectory = scriptPath;
+        proc.Start();
+        
+        proc.BeginOutputReadLine();
+        proc.BeginErrorReadLine();
+        await proc.WaitForExitAsync();
+        proc.CancelErrorRead();
+        proc.CancelOutputRead();
+        
+        // install/update requirements.txt
+        proc.StartInfo.Arguments = "pip install -r requirements.txt";
         proc.Start();
         proc.BeginOutputReadLine();
         proc.BeginErrorReadLine();
         await proc.WaitForExitAsync();
+        proc.CancelErrorRead();
+        proc.CancelOutputRead();
+        
+        // create temp file path for run
+        var pyRunDirPath = $"{Path.GetTempPath()}Scripts/run-{guid}";
+        Directory.CreateDirectory(pyRunDirPath);
+        
+        // copy script files to temp file path
+        // TODO: copy recursively, excluding .venv/.
+        foreach (var file in Directory.EnumerateFiles(scriptPath))
+        {
+            File.Copy(file, Path.Combine(pyRunDirPath, Path.GetFileName(file)), true);
+        }
+        var pyFilePath = $"{pyRunDirPath}/script.py";
+        
+        // get list of file before running script to zip output later
+        var preRunFiles = Directory.EnumerateFiles(pyRunDirPath).ToList();
+        
+        // run script
+        proc.StartInfo.FileName = $"{scriptPath}/.venv/bin/python";
+        proc.StartInfo.Arguments = $"\"{pyFilePath}\"";
+        proc.StartInfo.WorkingDirectory = pyRunDirPath;
+        proc.Start();
+        proc.BeginOutputReadLine();
+        proc.BeginErrorReadLine();
+        await proc.WaitForExitAsync();
+        proc.CancelErrorRead();
+        proc.CancelOutputRead();
         
         // update run row
         var run = pg.PythonRuns.First(r => r.Id == guid);

@@ -40,6 +40,7 @@
                     {
                         <MudText>@file</MudText>
                     }
+                    <MudButton Href=@($"/api/runs/{_runGuid.ToString()}/download") Target="_top">@_runGuid</MudButton>
                 </MudStack>
             </MudTabPanel>
             <MudTabPanel Text="History">
