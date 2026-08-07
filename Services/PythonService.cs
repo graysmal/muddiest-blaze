@@ -25,7 +25,8 @@ public class PythonService
         return scripts.ToList();
     }
 
-    public async Task RunAsync(PythonScript script, Action<Guid>? onGuidMade = null, Action<string>? onOutputLine = null, Action<List<string>> onOutputZip = null)
+    public async Task RunAsync(PythonScript script, Action<Guid>? onGuidMade = null, 
+        Action<string>? onOutputLine = null, Action<List<string>> onOutputZip = null)
     {
         // create run row in table
         var pg = await _postgresContextFactory.CreateDbContextAsync();
