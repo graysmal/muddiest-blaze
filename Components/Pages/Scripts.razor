@@ -10,16 +10,43 @@
 <MudStack Row="true"  StretchItems="StretchItems.End" Style="height:100%" >
     <PyScriptPicker @bind-Script="_script" />
     <MudDivider Vertical="true" />
-    @if (_script != null)
-    {
-        <MudButton OnClick="OnRun">@_script.Name</MudButton>
-        <MudText>@_output</MudText>
-        @foreach (var file in _zippedFiles)
-        {
-            <MudText>@file</MudText>
-        }
-        <MudButton  Href=@($"/api/runs/{_runGuid.ToString()}/download") Target="_top">@_runGuid</MudButton>
-    }
+    <MudStack>
+        <MudStack Row="true" AlignItems="AlignItems.Center">
+            <MudText T="string" Typo="Typo.h6">@(_script == null ? "Select a script" : _script.Name)</MudText>
+            <MudIconButton Size="Size.Medium" Color="Color.Primary" OnClick="OnRun"
+                           Icon="@Icons.Material.Filled.PlayArrow" 
+                           Disabled="@(_script == null)"/>
+            <MudSpacer/>
+            <MudTooltip Text="Last Ran User">
+                <MudText Style="cursor:default">Last Ran: ##/##/####</MudText>
+            </MudTooltip>
+            <MudText Style="cursor:default">
+                Modified: @(_script == null ? "##/##/####" : _script.GetDateModified().ToShortDateString())
+            </MudText>
+            <MudText Style="cursor:default">
+                Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToShortDateString())
+            </MudText>
+        </MudStack>
+        <MudTabs Style="height:100%" TabPanelsClass="h-full">
+            <MudTabPanel Text="Runner">
+                <MudStack Class="h-full">
+                    <MudTextField T="string" ReadOnly="true" Disabled="true"
+                                  Variant="Variant.Outlined"
+                                  Sizing="InputSizing.Auto"
+                                  Style="height:100%"
+                                  Label="Console Output"
+                                  Text="@(_output)"/>
+                    @foreach (var file in _zippedFiles)
+                    {
+                        <MudText>@file</MudText>
+                    }
+                </MudStack>
+            </MudTabPanel>
+            <MudTabPanel Text="History">
+                <MudText>test</MudText>
+            </MudTabPanel>
+        </MudTabs>
+    </MudStack>
 </MudStack>
 @code {
     private PythonScript? _script;

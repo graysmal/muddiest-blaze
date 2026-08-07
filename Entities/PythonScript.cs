@@ -17,4 +17,14 @@ public class PythonScript
         return reqTxt.Split('\n').Where(line => !string.IsNullOrWhiteSpace(line))
             .Select(line => PythonPackage.FromString(line)).ToList();
     }
+
+    public DateTime GetDateCreated()
+    {
+        return File.GetCreationTimeUtc($"./Scripts/{Name}").ToLocalTime();
+    }
+    
+    public DateTime GetDateModified()
+    {
+        return File.GetLastWriteTimeUtc($"./Scripts/{Name}").ToLocalTime();
+    }
 }
