@@ -4,10 +4,21 @@
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
 @inject PythonService Ps
-@* <style> *@
-@*     * { outline: 1px solid black; *@
-@*         outline-offset: -1px; } *@
-@* </style> *@
+<style>
+    /** { outline: 1px solid black;
+        outline-offset: -1px; }*/
+    .h-full {
+        height: 100%;
+        max-height: 100%;
+    }
+    .h-20 {
+        height: 20px;
+    }
+    .mud-tab-panel {
+        height: 100%;
+    }
+</style>
+
 <MudStack Row="true"  StretchItems="StretchItems.End" Style="height:100%" >
     <PyScriptPicker ScriptChanged="OnScriptChanged"/>
     <MudDivider Vertical="true" />
@@ -22,13 +33,13 @@
                 <MudText Style="cursor:default">Last Ran: ##/##/####</MudText>
             </MudTooltip>
             <MudText Style="cursor:default">
-                Modified: @(_script == null ? "##/##/####" : _script.GetDateModified().ToShortDateString())
+                Modified: @(_script == null ? "##/##/####" : _script.GetDateModified().ToLocalTime().ToShortDateString())
             </MudText>
             <MudText Style="cursor:default">
-                Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToShortDateString())
+                Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToLocalTime().ToShortDateString())
             </MudText>
         </MudStack>
-        <MudTabs Style="height:100%" TabPanelsClass="h-full">
+        <MudTabs Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20">
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full">
                     @if (_script != null)
@@ -51,8 +62,9 @@
                     <MudButton Href=@($"/api/runs/{_runGuid.ToString()}/download") Target="_top">@_runGuid</MudButton>
                 </MudStack>
             </MudTabPanel>
-            <MudTabPanel Text="History">
-                <MudText>test</MudText>
+            <MudTabPanel Text="History" Disabled=@(_script == null)>
+                <PyScriptHistory Script="_script"/>
+                @* <MudText>test</MudText> *@
             </MudTabPanel>
         </MudTabs>
     </MudStack>

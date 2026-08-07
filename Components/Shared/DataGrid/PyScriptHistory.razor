@@ -1,0 +1,66 @@
+@using BlazorApp1.Context
+@using BlazorApp1.Entities
+@inject PostgresContext Pg
+<style>
+    .h-full {
+        height: 100%;
+        max-height: 100%;
+    }
+    .mud-table-container {
+        width: 100% !important;
+    }
+</style>
+
+<MudDataGrid @ref="_grid" T="PythonRun" ServerData="ServerReload" Elevation="0" Dense="true"
+             Class="d-flex flex-column h-full"
+             FixedHeader="true" Height="100%" Hover="true"
+             ColumnResizeMode="ResizeMode.Container"
+             Filterable="true" FilterMode="DataGridFilterMode.ColumnFilterMenu"
+             ShowMenuIcon="true" Hideable="true" ShowColumnOptions="false"
+             SortMode="SortMode.Single" RowClass="nowrap" Breakpoint="Breakpoint.None" >
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Run History</MudText>
+        <MudSpacer />
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Property="x => x.Id" Title="ID" Resizable="true" />
+        <PropertyColumn Property="x => x.ScriptName" Title="Script Name" Resizable="true" />
+        <PropertyColumn Property="x => x.User" Title="User" Resizable="true" />
+        <PropertyColumn Property="x => x.Status" Title="Status" Resizable="true" />
+        <PropertyColumn Property="x => x.Started.ToLocalTime()" Title="Started" Resizable="true" InitialDirection="SortDirection.Descending" />
+        <PropertyColumn Property="x => x.Ended.HasValue?x.Ended.Value.ToLocalTime():x.Ended" Title="Ended" Resizable="true" />
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="PythonRun" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    [Parameter] public PythonScript Script { get; set; }
+    private MudDataGrid<PythonRun> _grid = null!;
+
+    private async Task<GridData<PythonRun>> ServerReload(GridState<PythonRun> state, CancellationToken token = default)
+    {
+        IEnumerable<PythonRun> data = Pg.PythonRuns;
+        // data = data.Where(o => $"{o.Id.ToShortDateString()} {o.EventType} {o.Name} {o.PreferredUsername} {o.ClientIp} {o.MachineName} {o.UserAgent}".ToLower().Contains(_searchString.ToLower())).ToArray();
+        
+        if (state.SortDefinitions.Any())
+        {
+            var firstSort = state.SortDefinitions.First();
+            data = firstSort.Descending
+                ? data.OrderByDescending(firstSort.SortFunc).ToList()
+                : data.OrderBy(firstSort.SortFunc).ToList();
+        }
+        if (state.FilterDefinitions.Any())
+        {
+            var filterFunctions = state.FilterDefinitions.Select(f => f.GenerateFilterFunction());
+            data = data
+                .Where(o => filterFunctions.All(f => f(o)))
+                .ToList();
+        }
+        var totalItems = data.Count();
+
+        var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
+        return new GridData<PythonRun> {TotalItems = totalItems, Items = pagedData};
+    }
+}

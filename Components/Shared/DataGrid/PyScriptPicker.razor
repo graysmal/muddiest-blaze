@@ -22,7 +22,7 @@
         <TemplateColumn CellClass="pa-0">
             <CellTemplate>
                 <MudListItem T="PythonScript" OnClick="async () => { await OnScriptChange(context.Item); }" 
-                             Style="flex-direction:row-reverse;">
+                             Style=@($"flex-direction:row-reverse;" + (context.Item == Script ? "background-color: var(--mud-palette-primary);" : "") )>
                     @context.Item.Name
                 </MudListItem>
             </CellTemplate>
