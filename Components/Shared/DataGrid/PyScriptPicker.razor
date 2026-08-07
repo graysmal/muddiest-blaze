@@ -1,0 +1,60 @@
+@using BlazorApp1.Entities
+@using BlazorApp1.Services
+@inject PythonService PythonService
+<style>
+    .h-full {
+        height: 100%;
+        max-height: 100%;
+    }
+    .mud-list-item-icon {
+        min-width: 0;
+    }
+</style>
+<MudDataGrid T="PythonScript" Items="_scripts" Elevation="0"
+             SortMode="SortMode.Single" Filterable="true" FilterMode="DataGridFilterMode.ColumnFilterMenu"
+             Hover="true" Dense="true" QuickFilter="QuickFilter"
+             Class="d-flex flex-column h-full" Height="100%"
+             RowsPerPage="25" Style="width:224px">
+    <ToolBarContent>
+        <MudTextField Label="Search scripts" @bind-Value="_searchString" Immediate="true"/>
+    </ToolBarContent>
+    <Columns>
+        <TemplateColumn CellClass="pa-0">
+            <CellTemplate>
+                <MudListItem T="PythonScript" OnClick="async () => { await OnScriptChange(context.Item); }" 
+                             Style="flex-direction:row-reverse;">
+                    @context.Item.Name
+                </MudListItem>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager PageSizeSelector="false" ShowPageNumber="false" Class="h-full overflow-hidden align-center"/>
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    [Parameter] public PythonScript? Script { get; set; }
+    [Parameter] public EventCallback<PythonScript> ScriptChanged { get; set; }
+    private List<PythonScript> _scripts = [];
+    private string _searchString = "";
+    private Func<PythonScript, bool> QuickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+        if (x.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    };
+    
+    protected override void OnInitialized()
+    {
+        _scripts = PythonService.GetPythonScripts();
+    }
+
+    private async Task OnScriptChange(PythonScript script)
+    {
+        Script = script;
+        await ScriptChanged.InvokeAsync(script);
+    }
+}
