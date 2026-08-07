@@ -1,9 +1,12 @@
 @page "/scripts"
 @using System.Text.Json.Nodes
 @using BlazorApp1.Components.Shared.DataGrid
+@using BlazorApp1.Context
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
+@using MudBlazor.Extensions
 @inject PythonService Ps
+@inject PostgresContext Pg
 <style>
     /** { outline: 1px solid black;
         outline-offset: -1px; }*/
@@ -29,14 +32,22 @@
                            Icon="@Icons.Material.Filled.PlayArrow" 
                            Disabled="@(_script == null)"/>
             <MudSpacer/>
-            <MudTooltip Text="Last Ran User">
-                <MudText Style="cursor:default">Last Ran: ##/##/####</MudText>
+            <MudTooltip Text=@(_script == null ? "Last Run User": Pg.PythonRuns
+                                .Where(x => x.ScriptName == _script.Name)
+                                .OrderByDescending(x => x.Started)
+                                .FirstOrDefault()?.User)>
+                <MudText Style="cursor:default">
+                    Last Ran: @(_script == null ? "##/##/####" : Pg.PythonRuns
+                                .Where(x => x.ScriptName == _script.Name)
+                                .OrderByDescending(x => x.Started)
+                                .FirstOrDefault()?.Started.ToLocalTime().ToString())
+                </MudText>
             </MudTooltip>
             <MudText Style="cursor:default">
-                Modified: @(_script == null ? "##/##/####" : _script.GetDateModified().ToLocalTime().ToShortDateString())
+                Modified: @(_script == null ? "##/##/####" : _script.GetDateModified().ToLocalTime().ToIsoDateString())
             </MudText>
             <MudText Style="cursor:default">
-                Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToLocalTime().ToShortDateString())
+                Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToLocalTime().ToIsoDateString())
             </MudText>
         </MudStack>
         <MudTabs Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20">
