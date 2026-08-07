@@ -1,10 +1,10 @@
+using System.Text.Json.Nodes;
+
 namespace BlazorApp1.Entities;
 
 public class PythonScript
 {
     public string Name { get; set; }
-    public DateTime Created { get; set; }
-    public DateTime Modified { get; set; }
 
     public string GetContent()
     {
@@ -16,6 +16,12 @@ public class PythonScript
         var reqTxt =  File.ReadAllText($"./Scripts/{Name}/requirements.txt");
         return reqTxt.Split('\n').Where(line => !string.IsNullOrWhiteSpace(line))
             .Select(line => PythonPackage.FromString(line)).ToList();
+    }
+
+    public JsonNode? GetParameterManifest()
+    {
+        var paramTxt = File.ReadAllText($"./Scripts/{Name}/params.json");
+        return JsonNode.Parse(paramTxt);
     }
 
     public DateTime GetDateCreated()

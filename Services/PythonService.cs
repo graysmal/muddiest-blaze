@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Text.Json.Nodes;
 using BlazorApp1.Context;
 using BlazorApp1.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +26,7 @@ public class PythonService
         return scripts.ToList();
     }
 
-    public async Task RunAsync(PythonScript script, Action<Guid>? onGuidMade = null, 
+    public async Task RunAsync(PythonScript script, JsonNode? _parameters, Action<Guid>? onGuidMade = null, 
         Action<string>? onOutputLine = null, Action<List<string>> onOutputZip = null)
     {
         // create run row in pg db table
@@ -91,7 +92,10 @@ public class PythonService
         {
             File.Copy(file, Path.Combine(pyRunDirPath, Path.GetFileName(file)), true);
         }
+        File.WriteAllText($"{pyRunDirPath}/params.json", _parameters.ToJsonString());
         var pyFilePath = $"{pyRunDirPath}/script.py";
+        // overwrite params
+        
         
         // get list of file before running script to zip output later
         var preRunFiles = Directory.EnumerateFiles(pyRunDirPath).ToList();

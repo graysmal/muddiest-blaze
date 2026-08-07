@@ -1,4 +1,5 @@
 @page "/scripts"
+@using System.Text.Json.Nodes
 @using BlazorApp1.Components.Shared.DataGrid
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
@@ -8,7 +9,7 @@
 @*         outline-offset: -1px; } *@
 @* </style> *@
 <MudStack Row="true"  StretchItems="StretchItems.End" Style="height:100%" >
-    <PyScriptPicker @bind-Script="_script" />
+    <PyScriptPicker ScriptChanged="OnScriptChanged"/>
     <MudDivider Vertical="true" />
     <MudStack>
         <MudStack Row="true" AlignItems="AlignItems.Center">
@@ -30,6 +31,13 @@
         <MudTabs Style="height:100%" TabPanelsClass="h-full">
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full">
+                    @if (_script != null)
+                    {
+                        foreach (var _item in _parameters.AsObject().AsEnumerable())
+                        {
+                            <MudTextField T="string" Label="@_item.Key" Text="@_item.Value.ToString()" ValueChanged=@(s => { _parameters[_item.Key] = s; })/>
+                        }
+                    }
                     <MudTextField T="string" ReadOnly="true" Disabled="true"
                                   Variant="Variant.Outlined"
                                   Sizing="InputSizing.Auto"
@@ -51,16 +59,23 @@
 </MudStack>
 @code {
     private PythonScript? _script;
+    private JsonNode? _parameters;
     private string _output = "";
     private Guid _runGuid = Guid.Empty;
     private List<string> _zippedFiles = [];
     
+    private void OnScriptChanged(PythonScript script)
+    {
+        _script = script;
+        _parameters = script.GetParameterManifest();
+    }
     private async Task OnRun()
     {
+        
         if (_script != null)
         {
             _output = "";
-            await Ps.RunAsync(_script, 
+            await Ps.RunAsync(_script, _parameters,
                 runGuid => 
                 { 
                     _runGuid = runGuid; 
@@ -81,4 +96,5 @@
                 });
         }
     }
+
 }
