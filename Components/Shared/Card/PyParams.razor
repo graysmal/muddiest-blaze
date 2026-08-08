@@ -24,14 +24,14 @@
             <MudCardContent>
                 @foreach (var item in Parameters.AsObject().AsEnumerable())
                 {
-                    
-                    <MudTextField T="string" Label="@item.Key" Text="@(item.Value==null?"":item.Value.ToString())" 
+
+                    <MudTextField T="string" Label="@item.Key" Text="@(item.Value == null ? "" : item.Value.ToString())"
                                   ValueChanged=@(s => { Parameters[item.Key] = s; })/>
                 }
             </MudCardContent>
             <MudCardActions Class="gap-2">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnRun">Run</MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="OnParametersSetAsync">Reset</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="OnReset">Reset</MudButton>
             </MudCardActions>
         }
     </MudCollapse>
@@ -44,19 +44,18 @@
 
     private bool _expanded = true;
 
-    protected override async Task OnParametersSetAsync()
-    {
-        await base.OnParametersSetAsync();
-        if (Script != null)
-        {
-            Parameters = Script.GetParameterManifest();
-        }
-    }
-
     private async Task OnRun()
     {
         _expanded = false;
         await OnRunClick.InvokeAsync(Parameters);
+    }
+    
+    private async Task OnReset()
+    {
+        if (Script != null)
+        {
+            Parameters = Script.GetParameterManifest();
+        }
     }
 
 }

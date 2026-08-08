@@ -56,7 +56,7 @@
         <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20" KeepPanelsAlive="true">
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full overflow-scroll" StretchItems="StretchItems.Middle">
-                    <PyParams Script="@_script" OnRunClick="OnRun"/>
+                    <PyParams Script="@_script" Parameters="@_parameters" OnRunClick="OnRun"/>
                     <ConsoleOutput Output="@_output"/>
                     <PyZipOutput ZippedFiles="_zippedFiles" Guid="_runGuid" />
                 </MudStack>
@@ -70,6 +70,7 @@
 
 @code {
     private PythonScript? _script;
+    private JsonNode? _parameters;
     private string _output = "";
     private Guid _runGuid = Guid.Empty;
     private List<string> _zippedFiles = [];
@@ -78,6 +79,7 @@
     private void OnScriptChanged(PythonScript script)
     {
         _script = script;
+        _parameters = _script.GetParameterManifest();
     }
     private async Task OnRun(JsonNode? parameters)
     {
