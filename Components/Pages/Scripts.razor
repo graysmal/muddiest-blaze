@@ -4,7 +4,6 @@
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
-@using MudBlazor.Extensions
 @inject PythonService Ps
 @inject PostgresContext Pg
 <style>
@@ -17,49 +16,78 @@
     .h-20 {
         height: 20px;
     }
+    .w-20 {
+        width: 20px;
+    }
     .mud-tab-panel {
         height: 100%;
     }
+    .mud-card-header-actions {
+        margin: 0 !important;
+    }
 </style>
 
-<MudStack Row="true"  StretchItems="StretchItems.End" Style="height:100%" >
+<MudStack Row="true" StretchItems="StretchItems.End" Class="h-full" >
     <PyScriptPicker ScriptChanged="OnScriptChanged"/>
     <MudDivider Vertical="true" />
-    <MudStack>
-        <MudStack Row="true" AlignItems="AlignItems.Center">
-            <MudText T="string" Typo="Typo.h6">@(_script == null ? "Select a script" : _script.Name)</MudText>
-            <MudIconButton Size="Size.Medium" Color="Color.Primary" OnClick="OnRun"
-                           Icon="@Icons.Material.Filled.PlayArrow" 
-                           Disabled="@(_script == null)"/>
+    <MudStack Class="w-20"> @* column stack of script info header and mudtabs *@
+        <MudStack Row="true" AlignItems="AlignItems.Center"> @* row stack of script name and relevant dates*@
+            <MudText T="string" Typo="Typo.h6">@(_script == null ? "No script selected" : _script.Name)</MudText>
             <MudSpacer/>
             <MudTooltip Text=@(_script == null ? "Last Run User": Pg.PythonRuns
-                                .Where(x => x.ScriptName == _script.Name)
-                                .OrderByDescending(x => x.Started)
-                                .FirstOrDefault()?.User)>
+                                 .Where(x => x.ScriptName == _script.Name)
+                                 .OrderByDescending(x => x.Started)
+                                 .FirstOrDefault()?.User)>
                 <MudText Style="cursor:default">
                     Last Ran: @(_script == null ? "##/##/####" : Pg.PythonRuns
-                                .Where(x => x.ScriptName == _script.Name)
-                                .OrderByDescending(x => x.Started)
-                                .FirstOrDefault()?.Started.ToLocalTime().ToString())
+                                  .Where(x => x.ScriptName == _script.Name)
+                                  .OrderByDescending(x => x.Started)
+                                  .FirstOrDefault()?.Started.ToLocalTime().ToString())
                 </MudText>
             </MudTooltip>
             <MudText Style="cursor:default">
-                Modified: @(_script == null ? "##/##/####" : _script.GetDateModified().ToLocalTime().ToIsoDateString())
+                Modified: @(_script == null ? "##/##/####" : _script.GetDateModified().ToLocalTime().ToShortDateString())
             </MudText>
             <MudText Style="cursor:default">
-                Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToLocalTime().ToIsoDateString())
+                Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToLocalTime().ToShortDateString())
             </MudText>
         </MudStack>
-        <MudTabs Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20">
+        <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20">
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full">
-                    @if (_script != null)
-                    {
-                        foreach (var _item in _parameters.AsObject().AsEnumerable())
-                        {
-                            <MudTextField T="string" Label="@_item.Key" Text="@_item.Value.ToString()" ValueChanged=@(s => { _parameters[_item.Key] = s; })/>
-                        }
-                    }
+                    <MudCard Outlined="true">
+                        <MudCardHeader Class="pt-0 pb-0 pl-0 pr-3">
+                            <CardHeaderContent>
+                                <MudButton 
+                                    Disabled="_script==null" 
+                                    OnClick="() => _expanded = !_expanded" 
+                                    Style="width: 100%;justify-content: unset">
+                                    <MudText Typo="Typo.h6">Parameters</MudText>
+                                </MudButton>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudIconButton
+                                    Disabled="_script==null"
+                                    Icon="@(_expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
+                                    OnClick="() => _expanded = !_expanded"/>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        <MudCollapse Expanded="@(_script != null && _expanded)">
+                            @if (_script != null)
+                            {
+                                <MudCardContent>
+                                    @foreach (var _item in _parameters.AsObject().AsEnumerable())
+                                    {
+                                        <MudTextField T="string" Label="@_item.Key" Text="@_item.Value.ToString()" 
+                                                      ValueChanged=@(s => { _parameters[_item.Key] = s; })/>
+                                    }
+                                </MudCardContent>
+                                <MudCardActions>
+                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnRun">Run</MudButton>
+                                </MudCardActions>
+                            }
+                        </MudCollapse>
+                    </MudCard>
                     <MudTextField T="string" ReadOnly="true" Disabled="true"
                                   Variant="Variant.Outlined"
                                   Sizing="InputSizing.Auto"
@@ -73,28 +101,32 @@
                     <MudButton Href=@($"/api/runs/{_runGuid.ToString()}/download") Target="_top">@_runGuid</MudButton>
                 </MudStack>
             </MudTabPanel>
-            <MudTabPanel Text="History" Disabled=@(_script == null)>
+            <MudTabPanel Text="History">
                 <PyScriptHistory Script="_script"/>
-                @* <MudText>test</MudText> *@
             </MudTabPanel>
         </MudTabs>
     </MudStack>
 </MudStack>
+
 @code {
     private PythonScript? _script;
     private JsonNode? _parameters;
     private string _output = "";
     private Guid _runGuid = Guid.Empty;
     private List<string> _zippedFiles = [];
+    private MudTabs? _tabs = null!;
+    private bool _expanded = true;
     
     private void OnScriptChanged(PythonScript script)
     {
         _script = script;
         _parameters = script.GetParameterManifest();
+        _expanded = true;
     }
     private async Task OnRun()
     {
-        
+        _expanded = false;
+        await _tabs.ActivatePanelAsync(0);
         if (_script != null)
         {
             _output = "";

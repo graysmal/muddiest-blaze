@@ -36,14 +36,32 @@
 </MudDataGrid>
 
 @code {
-    [Parameter] public PythonScript Script { get; set; }
+    [Parameter] public PythonScript? Script { get; set; }
     private MudDataGrid<PythonRun> _grid = null!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        
+        if (Script != null)
+        {
+            _grid.FilterDefinitions.Clear();
+            _grid.FilterDefinitions.Add(new FilterDefinition<PythonRun>
+            {
+                Id = Guid.NewGuid(),
+                Title = "Script Name",
+                Column = _grid.RenderedColumns.First(x => x.Title == "Script Name"),
+                Operator = "equals",
+                Value = Script.Name
+            });
+            await _grid.ReloadServerData();
+        }
+    }
 
     private async Task<GridData<PythonRun>> ServerReload(GridState<PythonRun> state, CancellationToken token = default)
     {
         IEnumerable<PythonRun> data = Pg.PythonRuns;
-        // data = data.Where(o => $"{o.Id.ToShortDateString()} {o.EventType} {o.Name} {o.PreferredUsername} {o.ClientIp} {o.MachineName} {o.UserAgent}".ToLower().Contains(_searchString.ToLower())).ToArray();
-        
+
         if (state.SortDefinitions.Any())
         {
             var firstSort = state.SortDefinitions.First();
