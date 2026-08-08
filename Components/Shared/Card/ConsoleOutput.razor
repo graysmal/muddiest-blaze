@@ -1,0 +1,36 @@
+<MudCard Outlined="true">
+    <MudCardHeader Class="pt-0 pb-0 pl-0 pr-3">
+        <CardHeaderContent>
+            <MudButton 
+                OnClick="() => _expanded = !_expanded" 
+                Style="width: 100%;justify-content: unset">
+                <MudText Typo="Typo.h6">Console Output</MudText>
+            </MudButton>
+        </CardHeaderContent>
+        <CardHeaderActions>
+            <MudIconButton
+                Icon="@(_expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
+                OnClick="() => _expanded = !_expanded"/>
+        </CardHeaderActions>
+    </MudCardHeader>
+    <MudCollapse Expanded="_expanded">
+        <MudCardContent Style="background-color: var(--mud-palette-dark);color: var(--mud-palette-dark-text)">
+            @if (!string.IsNullOrEmpty(Output))
+            {
+                @foreach (var line in Output.Split('\n'))
+                {
+                    <MudText Typo="Typo.body1" Style="font-family: monospace">> @line</MudText>
+                }
+            }
+            else
+            {
+                <MudText Typo="Typo.body1" Style="font-family: monospace">No output</MudText>
+            }
+        </MudCardContent>
+    </MudCollapse>
+</MudCard>
+
+@code {
+    [Parameter] public string Output { get; set; }
+    private bool _expanded = true;
+}

@@ -1,6 +1,7 @@
 @page "/scripts"
 @using System.Text.Json.Nodes
 @using BlazorApp1.Components.Shared.DataGrid
+@using BlazorApp1.Components.Shared.Card
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
@@ -52,48 +53,11 @@
                 Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToLocalTime().ToShortDateString())
             </MudText>
         </MudStack>
-        <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20">
+        <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20" KeepPanelsAlive="true">
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full">
-                    <MudCard Outlined="true">
-                        <MudCardHeader Class="pt-0 pb-0 pl-0 pr-3">
-                            <CardHeaderContent>
-                                <MudButton 
-                                    Disabled="_script==null" 
-                                    OnClick="() => _expanded = !_expanded" 
-                                    Style="width: 100%;justify-content: unset">
-                                    <MudText Typo="Typo.h6">Parameters</MudText>
-                                </MudButton>
-                            </CardHeaderContent>
-                            <CardHeaderActions>
-                                <MudIconButton
-                                    Disabled="_script==null"
-                                    Icon="@(_expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
-                                    OnClick="() => _expanded = !_expanded"/>
-                            </CardHeaderActions>
-                        </MudCardHeader>
-                        <MudCollapse Expanded="@(_script != null && _expanded)">
-                            @if (_script != null)
-                            {
-                                <MudCardContent>
-                                    @foreach (var _item in _parameters.AsObject().AsEnumerable())
-                                    {
-                                        <MudTextField T="string" Label="@_item.Key" Text="@_item.Value.ToString()" 
-                                                      ValueChanged=@(s => { _parameters[_item.Key] = s; })/>
-                                    }
-                                </MudCardContent>
-                                <MudCardActions>
-                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnRun">Run</MudButton>
-                                </MudCardActions>
-                            }
-                        </MudCollapse>
-                    </MudCard>
-                    <MudTextField T="string" ReadOnly="true" Disabled="true"
-                                  Variant="Variant.Outlined"
-                                  Sizing="InputSizing.Auto"
-                                  Style="height:100%"
-                                  Label="Console Output"
-                                  Text="@(_output)"/>
+                    <PyParams Script="@_script" OnRunClick="OnRun"/>
+                    <ConsoleOutput Output="@_output"/>
                     @foreach (var file in _zippedFiles)
                     {
                         <MudText>@file</MudText>
@@ -110,27 +74,22 @@
 
 @code {
     private PythonScript? _script;
-    private JsonNode? _parameters;
     private string _output = "";
     private Guid _runGuid = Guid.Empty;
     private List<string> _zippedFiles = [];
     private MudTabs? _tabs = null!;
-    private bool _expanded = true;
     
     private void OnScriptChanged(PythonScript script)
     {
         _script = script;
-        _parameters = script.GetParameterManifest();
-        _expanded = true;
     }
-    private async Task OnRun()
+    private async Task OnRun(JsonNode? parameters)
     {
-        _expanded = false;
         await _tabs.ActivatePanelAsync(0);
         if (_script != null)
         {
             _output = "";
-            await Ps.RunAsync(_script, _parameters,
+            await Ps.RunAsync(_script, parameters,
                 runGuid => 
                 { 
                     _runGuid = runGuid; 
