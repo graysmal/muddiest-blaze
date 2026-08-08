@@ -24,9 +24,23 @@
             <MudCardContent>
                 @foreach (var item in Parameters.AsObject().AsEnumerable())
                 {
-
-                    <MudTextField T="string" Label="@item.Key" Text="@(item.Value == null ? "" : item.Value.ToString())"
-                                  ValueChanged=@(s => { Parameters[item.Key] = s; })/>
+                    // if item is a array object, display a component that can add/remove elements for list.
+                    if (item.Value is JsonArray)
+                    {
+                        var array = item.Value.AsArray(); 
+                        @for (int i = 0;  i < array.Count; i++)
+                        {
+                            int index = i;
+                            Console.WriteLine(item.Key + item.Value + item.Value.GetValueKind());
+                            <MudTextField T="string" Label=@($"{item.Key}:{index}") Text="@(array[index] == null ? "":array[index].ToString())"
+                                          ValueChanged=@(s => { array[index] = JsonValue.Create(s); })/>
+                        }
+                    }
+                    else
+                    {
+                        <MudTextField T="string" Label="@item.Key" Text="@(item.Value == null ? "" : item.Value.ToString())"
+                                      ValueChanged=@(s => { Parameters[item.Key] = s; })/>
+                    }
                 }
             </MudCardContent>
             <MudCardActions Class="gap-2">
