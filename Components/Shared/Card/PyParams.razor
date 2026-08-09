@@ -1,7 +1,5 @@
-@using System.Text.Json
 @using System.Text.Json.Nodes
 @using BlazorApp1.Entities
-@using MudBlazor.Extensions
 
 <MudCard Outlined="true">
     <MudCardHeader Class="pt-0 pb-0 pl-0 pr-3">
@@ -26,58 +24,11 @@
             <MudCardContent>
                 @foreach (var item in Parameters.AsObject().AsEnumerable())
                 {
-                    // if item is a array object, display a component that can add/remove elements for list.
-                    if (item.Value is JsonArray)
-                    {
-                        <MudText>@item.Key</MudText>
-                        var array = item.Value.AsArray(); 
-                        <MudPaper Class="pl-8" Elevation="0" Style="border-left: 1px solid var(--mud-palette-lines-inputs);" Square="true">
-                            @for (int i = 0;  i < array.Count; i++)
-                            {
-                                int index = i;
-                                <MudStack Row="true" AlignItems="AlignItems.Center">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small" OnClick="async () => { await RemoveArrayItem(array, index); }"/>
-                                    <MudTextField T="string" Label=@index.ToString() Text="@(array[index] == null ? "" : array[index].ToString())"
-                                                  ValueChanged=@(s => { array[index] = JsonValue.Create(s); })/>
-                                </MudStack>
-                            }
-                            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
-                                           OnClick="async () => { await AddArrayItem(array); }"/>
-                        </MudPaper>
-                    }
-                    else if (item.Value.GetValueKind() == JsonValueKind.True || item.Value.GetValueKind() == JsonValueKind.False)
-                    {
-                        <MudCheckBox T="bool" Label="@item.Key" Value=@(item.Value.GetValue<bool>()) Style="width: max-content"
-                                     ValueChanged=@(s => { Parameters[item.Key] = s; }) LabelPlacement="Placement.Left"
-                                     Size="Size.Small"/>
-                    }
-                    else if (item.Value.GetValueKind() == JsonValueKind.Number)
-                    {
-                        Script.GetParameterManifest()!.AsObject().TryGetPropertyValue(item.Key, out var manifestValue);
-                        if (int.TryParse(manifestValue.ToString(), out int intValue))
-                        {
-                            <MudTextField T="int" Label="@item.Key" Text="@(intValue.ToString())"
-                                          ValueChanged=@(s => { Parameters[item.Key] = s; })/>
-                        }
-                        else if (double.TryParse(manifestValue.ToString(), out double doubleValue))
-                        {
-                            <MudTextField T="double" Label="@item.Key" Text=@(doubleValue.ToString())
-                                          ValueChanged=@(s => { Parameters[item.Key] = s; })/>
-                        }
-                        
-                    }
-                    else if (item.Value.GetValueKind() == JsonValueKind.String)
-                    {
-                        if (DateTime.TryParse(item.Value.ToString(), out DateTime dateValue)) {
-                            <MudDatePicker T="DateTime" Label="@item.Key" Date=@dateValue
-                                          DateChanged=@(s => { Parameters[item.Key] = s.Value.ToString("s"); })/>
-                        }
-                        else
-                        {
-                            <MudTextField T="string" Label="@item.Key" Text="@(item.Value == null ? "" : item.Value.ToString())"
-                                          ValueChanged=@(s => { Parameters[item.Key] = s; })/>
-                        }
-                    }
+                    <PyParams_Field
+                        Key="@item.Key"
+                        Value="@item.Value"
+                        OriginalValue="@_originalParameters"
+                        OnValueChanged="@(v => Parameters[item.Key] = v)"/>
                 }
             </MudCardContent>
             <MudCardActions Class="gap-2">
@@ -92,8 +43,15 @@
     [Parameter] public PythonScript? Script { get; set; }
     [Parameter] public JsonNode? Parameters { get; set; }
     [Parameter] public EventCallback<JsonNode?> OnRunClick { get; set; }
+    private JsonNode? _originalParameters = null;
 
     private bool _expanded = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Script != null)
+        _originalParameters = Script.GetParameterManifest();
+    }
 
     private async Task OnRun()
     {

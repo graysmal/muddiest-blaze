@@ -1,0 +1,95 @@
+@using System.Text.Json
+@using System.Text.Json.Nodes
+
+@if (Value is JsonArray array)
+{
+    <MudText>@Key</MudText>
+    <MudPaper Class="pl-8" Elevation="0"
+        Style="border-left: 1px solid var(--mud-palette-lines-inputs);display:flex;gap:8px;flex-direction:column;align-items:start;"
+        Square="true">
+        @for (int i = 0; i < array.Count; i++)
+        {
+            var index = i;
+            var originalArray = OriginalValue as JsonArray;
+            var originalItem = (originalArray != null && index < originalArray.Count)
+                ? originalArray[index]
+                : null;
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small"
+                    OnClick="@(() => RemoveArrayItem(array, index))"/>
+                <PyParams_Field
+                    Key="@index.ToString()"
+                    Value="@array[index]"
+                    OriginalValue="@originalItem"
+                    OnValueChanged="@(v => array[index] = v)" />
+            </MudStack>
+        }
+        <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
+            OnClick="@(() => AddArrayItem(array))"/>
+    </MudPaper>
+}
+else if (Value?.GetValueKind() is JsonValueKind.True or JsonValueKind.False)
+{
+    <MudCheckBox T="bool" Label="@Key" Value=@(Value.GetValue<bool>()) Style="width: max-content"
+        ValueChanged="@(s => OnValueChanged.InvokeAsync(JsonValue.Create(s)))"
+        LabelPlacement="Placement.Left" Size="Size.Small"/>
+}
+else if (Value?.GetValueKind() == JsonValueKind.Number)
+{
+    @if (int.TryParse(OriginalValue?.ToString(), out _))
+    {
+        <MudTextField T="int" Label="@Key" Text="@(Value.GetValue<int>().ToString())"
+            ValueChanged="@(s => OnValueChanged.InvokeAsync(JsonValue.Create(s)))"/>
+    }
+    else
+    {
+        <MudTextField T="double" Label="@Key" Text="@(Value.GetValue<double>().ToString())"
+            ValueChanged="@(s => OnValueChanged.InvokeAsync(JsonValue.Create(s)))"/>
+    }
+}
+else if (Value?.GetValueKind() == JsonValueKind.String)
+{
+    @if (DateTime.TryParse(Value.ToString(), out var dateValue))
+    {
+        <MudDatePicker T="DateTime" Label="@Key" Date="@dateValue"
+            DateChanged="@(s => OnValueChanged.InvokeAsync(JsonValue.Create(s.Value.ToString("s"))))"/>
+    }
+    else
+    {
+        <MudTextField T="string" Label="@Key" Text="@(Value?.ToString() ?? "")"
+            ValueChanged="@(s => OnValueChanged.InvokeAsync(JsonValue.Create(s)))"/>
+    }
+}
+
+@code {
+    [Parameter] public string Key { get; set; } = "";
+    [Parameter] public JsonNode? Value { get; set; }
+    [Parameter] public JsonNode? OriginalValue { get; set; }
+    [Parameter] public EventCallback<JsonNode?> OnValueChanged { get; set; }
+
+    private void AddArrayItem(JsonArray array)
+    {
+        // prefer inferring from an existing live element
+        JsonNode? template = array.Count > 0 ? array[0] : null;
+
+        // fall back to the manifest's original shape if the array is currently empty
+        if (template is null && OriginalValue is JsonArray originalArray && originalArray.Count > 0)
+            template = originalArray[0];
+
+        array.Add(CloneAsDefault(template));
+    }
+
+    private JsonNode? CloneAsDefault(JsonNode? template) => template switch
+    {
+        JsonArray arr => new JsonArray(arr.Select(CloneAsDefault).ToArray()),
+        JsonValue v when v.TryGetValue<bool>(out _) => JsonValue.Create(false),
+        JsonValue v when v.TryGetValue<int>(out _) => JsonValue.Create(0),
+        JsonValue v when v.TryGetValue<double>(out _) => JsonValue.Create(0.0),
+        _ => JsonValue.Create("")
+    };
+
+    private async Task RemoveArrayItem(JsonArray array, int index)
+    {
+        array.RemoveAt(index);
+    }
+}
