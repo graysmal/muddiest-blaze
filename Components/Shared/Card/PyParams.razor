@@ -19,19 +19,26 @@
         </CardHeaderActions>
     </MudCardHeader>
     <MudCollapse Expanded="@(Script != null && _expanded)">
-        @if (Script != null && Parameters != null)
+        @if (Script != null)
         {
             <MudCardContent>
-                <MudGrid Justify="Justify.FlexStart">
-                @foreach (var item in Parameters.AsObject().AsEnumerable())
+                @if (Parameters != null)
                 {
-                    <PyParams_Field
-                        Key="@item.Key"
-                        Value="@item.Value"
-                        OriginalValue="@_originalParameters"
-                        OnValueChanged="@(v => Parameters[item.Key] = v)"/>
+                    <MudGrid Justify="Justify.FlexStart">
+                        @foreach (var item in Parameters.AsObject().AsEnumerable())
+                        {
+                            <PyParams_Field
+                                Key="@item.Key"
+                                Value="@item.Value"
+                                OriginalValue="@_originalParameters"
+                                OnValueChanged="@(v => Parameters[item.Key] = v)"/>
+                        }
+                    </MudGrid>
                 }
-                </MudGrid>
+                else
+                {
+                    <MudText>No parameters are available.</MudText>
+                }
             </MudCardContent>
             <MudCardActions Class="gap-2">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnRun">Run</MudButton>

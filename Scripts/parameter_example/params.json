@@ -1,0 +1,36 @@
+{
+  "example_string": "this is the example string param value",
+  "example_int": 5,
+  "example_bool": true,
+  "example_float": 3.14,
+  "example_datetime": "2023-04-01T12:00:00",
+  "example_list_string": [
+    "list1 value",
+    "list2 value",
+    "list3 value"
+  ],
+  "example_list_int": [
+    34,
+    35,
+    100
+  ],
+  "example_list_bool": [
+    true,
+    false,
+    true
+  ],
+  "example_list_float": [
+    34.4,
+    35.17,
+    100.90
+  ],
+  "example_list_datetime": [
+    "2023-04-01T12:00:00",
+    "2023-04-01T12:00:00",
+    "2023-04-01T12:00:00"
+  ],
+  "example_list_2D": [
+    ["list1 value", false],
+    ["list2 value", true]
+  ]
+}

@@ -29,14 +29,14 @@
                 OnClick="() => _expanded = !_expanded"/>
         </CardHeaderActions>
     </MudCardHeader>
-    <MudCollapse Expanded="_expanded" Style="background-color: var(--mud-palette-dark);color: var(--mud-palette-dark-text)">
+    <MudCollapse Expanded="_expanded" Style="background-color: var(--mud-palette-dark);color: var(--mud-palette-dark-text);border-radius:3px">
         <MudCardContent Class="console-content" Style="height: 100px;display:flex;flex-direction:column-reverse;overflow:scroll;align-items:start;">
             <MudPaper Elevation="0" Style="background-color: rgba(0,0,0,0);display: flex;flex-direction: column-reverse;">
                 @if (!string.IsNullOrEmpty(Output))
                 {
                     @foreach (var line in Output.Split('\n').SkipLast(1).Reverse())
                     {
-                        <MudText Typo="Typo.body2" Style="font-family: monospace">> @line</MudText>
+                        <MudText Typo="Typo.body2" Style="font-family: monospace"><pre>> @line</pre></MudText>
                     }
                 }
                 else

@@ -20,8 +20,15 @@ public class PythonScript
 
     public JsonNode? GetParameterManifest()
     {
-        var paramTxt = File.ReadAllText($"./Scripts/{Name}/params.json");
-        return JsonNode.Parse(paramTxt);
+        try
+        {
+            var paramTxt = File.ReadAllText($"./Scripts/{Name}/params.json");
+            return JsonNode.Parse(paramTxt);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public DateTime GetDateCreated()

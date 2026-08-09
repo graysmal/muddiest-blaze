@@ -97,7 +97,11 @@ public class PythonService
             {
                 File.Copy(file, Path.Combine(pyRunDirPath, Path.GetFileName(file)), true);
             }
-            File.WriteAllText($"{pyRunDirPath}/params.json", _parameters.ToJsonString());
+
+            if (_parameters != null)
+            {
+                File.WriteAllText($"{pyRunDirPath}/params.json", _parameters.ToJsonString());
+            }
             var pyFilePath = $"{pyRunDirPath}/script.py";
             // overwrite params
             
