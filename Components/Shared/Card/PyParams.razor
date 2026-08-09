@@ -1,5 +1,7 @@
+@using System.Text.Json
 @using System.Text.Json.Nodes
 @using BlazorApp1.Entities
+@using MudBlazor.Extensions
 
 <MudCard Outlined="true">
     <MudCardHeader Class="pt-0 pb-0 pl-0 pr-3">
@@ -43,10 +45,38 @@
                                            OnClick="async () => { await AddArrayItem(array); }"/>
                         </MudPaper>
                     }
-                    else
+                    else if (item.Value.GetValueKind() == JsonValueKind.True || item.Value.GetValueKind() == JsonValueKind.False)
                     {
-                        <MudTextField T="string" Label="@item.Key" Text="@(item.Value == null ? "" : item.Value.ToString())"
-                                      ValueChanged=@(s => { Parameters[item.Key] = s; })/>
+                        <MudCheckBox T="bool" Label="@item.Key" Value=@(item.Value.GetValue<bool>()) Style="width: max-content"
+                                     ValueChanged=@(s => { Parameters[item.Key] = s; }) LabelPlacement="Placement.Left"
+                                     Size="Size.Small"/>
+                    }
+                    else if (item.Value.GetValueKind() == JsonValueKind.Number)
+                    {
+                        Script.GetParameterManifest()!.AsObject().TryGetPropertyValue(item.Key, out var manifestValue);
+                        if (int.TryParse(manifestValue.ToString(), out int intValue))
+                        {
+                            <MudTextField T="int" Label="@item.Key" Text="@(intValue.ToString())"
+                                          ValueChanged=@(s => { Parameters[item.Key] = s; })/>
+                        }
+                        else if (double.TryParse(manifestValue.ToString(), out double doubleValue))
+                        {
+                            <MudTextField T="double" Label="@item.Key" Text=@(doubleValue.ToString())
+                                          ValueChanged=@(s => { Parameters[item.Key] = s; })/>
+                        }
+                        
+                    }
+                    else if (item.Value.GetValueKind() == JsonValueKind.String)
+                    {
+                        if (DateTime.TryParse(item.Value.ToString(), out DateTime dateValue)) {
+                            <MudDatePicker T="DateTime" Label="@item.Key" Date=@dateValue
+                                          DateChanged=@(s => { Parameters[item.Key] = s.Value.ToString("s"); })/>
+                        }
+                        else
+                        {
+                            <MudTextField T="string" Label="@item.Key" Text="@(item.Value == null ? "" : item.Value.ToString())"
+                                          ValueChanged=@(s => { Parameters[item.Key] = s; })/>
+                        }
                     }
                 }
             </MudCardContent>
