@@ -79,13 +79,16 @@ public class PythonService
             proc.CancelOutputRead();
             
             // install/update requirements.txt
-            proc.StartInfo.Arguments = "pip install -r requirements.txt";
-            proc.Start();
-            proc.BeginOutputReadLine();
-            proc.BeginErrorReadLine();
-            await proc.WaitForExitAsync();
-            proc.CancelErrorRead();
-            proc.CancelOutputRead();
+            if (File.Exists($"{scriptPath}/requirements.txt"))
+            {
+                proc.StartInfo.Arguments = "pip install -r requirements.txt";
+                proc.Start();
+                proc.BeginOutputReadLine();
+                proc.BeginErrorReadLine();
+                await proc.WaitForExitAsync();
+                proc.CancelErrorRead();
+                proc.CancelOutputRead();
+            }
             
             // create temp file path for run
             var pyRunDirPath = $"{Path.GetTempPath()}Scripts/run-{guid}";
@@ -122,9 +125,18 @@ public class PythonService
             
             // update run row
             var run = pg.PythonRuns.First(r => r.Id == guid);
-            run.Status = "Completed";
-            run.Ended = DateTime.UtcNow;
-            await pg.SaveChangesAsync();
+            if (proc.ExitCode == 0)
+            {
+                run.Status = "Completed";
+                run.Ended = DateTime.UtcNow;
+                await pg.SaveChangesAsync();
+            }
+            else
+            {
+                run.Status = "Failed";
+                run.Ended = DateTime.UtcNow;
+                await pg.SaveChangesAsync();
+            }
 
             // zip up all output files and return list of files
             var postRunFiles = Directory.EnumerateFiles(pyRunDirPath);
