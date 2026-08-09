@@ -59,7 +59,10 @@ public class PythonService
             };
             proc.ErrorDataReceived += (s, e) =>
             {
-                onOutputLine?.Invoke(e.Data);
+                if (!e.Data.IsWhiteSpace())
+                {
+                    onOutputLine?.Invoke(e.Data);
+                }
             };
             
             // create virtual environment if it doesn't exist.
@@ -104,7 +107,7 @@ public class PythonService
             
             // run script
             proc.StartInfo.FileName = $"{scriptPath}/.venv/bin/python";
-            proc.StartInfo.Arguments = $"\"{pyFilePath}\"";
+            proc.StartInfo.Arguments = $"-u \"{pyFilePath}\"";
             proc.StartInfo.WorkingDirectory = pyRunDirPath;
             proc.Start();
             proc.BeginOutputReadLine();
