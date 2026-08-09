@@ -1,32 +1,50 @@
 @using System.Text.Json
 @using System.Text.Json.Nodes
 
+<style>
+    .mud-card-header-actions {
+        align-self: unset !important;
+    }
+</style>
+
+<MudCard Class="pa-2 ml-3" Elevation="0">
 @if (Value is JsonArray array)
 {
-    <MudText>@Key</MudText>
-    <MudPaper Class="pl-8" Elevation="0"
-        Style="border-left: 1px solid var(--mud-palette-lines-inputs);display:flex;gap:8px;flex-direction:column;align-items:start;"
-        Square="true">
-        @for (int i = 0; i < array.Count; i++)
-        {
-            var index = i;
-            var originalArray = OriginalValue as JsonArray;
-            var originalItem = (originalArray != null && index < originalArray.Count)
-                ? originalArray[index]
-                : null;
-            <MudStack Row="true" AlignItems="AlignItems.Center">
-                <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small"
-                    OnClick="@(() => RemoveArrayItem(array, index))"/>
-                <PyParams_Field
-                    Key="@index.ToString()"
-                    Value="@array[index]"
-                    OriginalValue="@originalItem"
-                    OnValueChanged="@(v => array[index] = v)" />
-            </MudStack>
-        }
-        <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
-            OnClick="@(() => AddArrayItem(array))"/>
-    </MudPaper>
+    <MudCardHeader Class="align-items-center pa-0">
+        <CardHeaderContent><MudButton 
+                               OnClick="() => _expanded = !_expanded" 
+                               Style="width: 100%;justify-content: unset"><MudText>@Key</MudText></MudButton></CardHeaderContent>
+        <CardHeaderActions><MudIconButton
+                               Icon="@(_expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
+                               OnClick="() => _expanded = !_expanded" Size="Size.Small"/></CardHeaderActions>
+    </MudCardHeader>
+    <MudCardContent Class="pa-0">
+        <MudCollapse Expanded="_expanded">
+            <MudPaper Class="pl-8" Elevation="0"
+                      Style="border-left: 1px solid var(--mud-palette-lines-inputs);display:flex;gap:8px;flex-direction:column;align-items:start;"
+                      Square="true">
+                @for (int i = 0; i < array.Count; i++)
+                {
+                    var index = i;
+                    var originalArray = OriginalValue as JsonArray;
+                    var originalItem = (originalArray != null && index < originalArray.Count)
+                        ? originalArray[index]
+                        : null;
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small"
+                                       OnClick="@(() => RemoveArrayItem(array, index))"/>
+                        <PyParams_Field
+                            Key="@index.ToString()"
+                            Value="@array[index]"
+                            OriginalValue="@originalItem"
+                            OnValueChanged="@(v => array[index] = v)"/>
+                    </MudStack>
+                }
+                <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
+                               OnClick="@(() => AddArrayItem(array))"/>
+            </MudPaper>
+        </MudCollapse>
+    </MudCardContent>
 }
 else if (Value?.GetValueKind() is JsonValueKind.True or JsonValueKind.False)
 {
@@ -60,12 +78,15 @@ else if (Value?.GetValueKind() == JsonValueKind.String)
             ValueChanged="@(s => OnValueChanged.InvokeAsync(JsonValue.Create(s)))"/>
     }
 }
+</MudCard>
 
 @code {
     [Parameter] public string Key { get; set; } = "";
     [Parameter] public JsonNode? Value { get; set; }
     [Parameter] public JsonNode? OriginalValue { get; set; }
     [Parameter] public EventCallback<JsonNode?> OnValueChanged { get; set; }
+    
+    private bool _expanded = true;
 
     private void AddArrayItem(JsonArray array)
     {

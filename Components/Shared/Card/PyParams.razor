@@ -22,6 +22,7 @@
         @if (Script != null && Parameters != null)
         {
             <MudCardContent>
+                <MudGrid Justify="Justify.FlexStart">
                 @foreach (var item in Parameters.AsObject().AsEnumerable())
                 {
                     <PyParams_Field
@@ -30,6 +31,7 @@
                         OriginalValue="@_originalParameters"
                         OnValueChanged="@(v => Parameters[item.Key] = v)"/>
                 }
+                </MudGrid>
             </MudCardContent>
             <MudCardActions Class="gap-2">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnRun">Run</MudButton>
