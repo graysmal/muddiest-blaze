@@ -27,14 +27,21 @@
                     // if item is a array object, display a component that can add/remove elements for list.
                     if (item.Value is JsonArray)
                     {
+                        <MudText>@item.Key</MudText>
                         var array = item.Value.AsArray(); 
-                        @for (int i = 0;  i < array.Count; i++)
-                        {
-                            int index = i;
-                            Console.WriteLine(item.Key + item.Value + item.Value.GetValueKind());
-                            <MudTextField T="string" Label=@($"{item.Key}:{index}") Text="@(array[index] == null ? "":array[index].ToString())"
-                                          ValueChanged=@(s => { array[index] = JsonValue.Create(s); })/>
-                        }
+                        <MudPaper Class="pl-8" Elevation="0" Style="border-left: 1px solid var(--mud-palette-lines-inputs);" Square="true">
+                            @for (int i = 0;  i < array.Count; i++)
+                            {
+                                int index = i;
+                                <MudStack Row="true" AlignItems="AlignItems.Center">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small" OnClick="async () => { await RemoveArrayItem(array, index); }"/>
+                                    <MudTextField T="string" Label=@index.ToString() Text="@(array[index] == null ? "" : array[index].ToString())"
+                                                  ValueChanged=@(s => { array[index] = JsonValue.Create(s); })/>
+                                </MudStack>
+                            }
+                            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small"
+                                           OnClick="async () => { await AddArrayItem(array); }"/>
+                        </MudPaper>
                     }
                     else
                     {
@@ -72,4 +79,13 @@
         }
     }
 
+    private async Task AddArrayItem(JsonArray array)
+    {
+        array.Add(JsonValue.Create(""));
+    }
+    
+    private async Task RemoveArrayItem(JsonArray array, int index)
+    {
+        array.RemoveAt(index);
+    }
 }
