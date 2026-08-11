@@ -33,6 +33,25 @@
         <PropertyColumn Property="x => x.Status" Title="Status" Resizable="true" />
         <PropertyColumn Property="x => x.Started.ToLocalTime()" Title="Started" Resizable="true" InitialDirection="SortDirection.Descending" />
         <PropertyColumn Property="x => x.Ended.HasValue?x.Ended.Value.ToLocalTime():x.Ended" Title="Ended" Resizable="true" />
+        <TemplateColumn Property="x => x.HasOutput" Title="Output" Resizable="true">
+            <CellTemplate>
+                @if (context.Item.HasOutput)
+                {
+                    if (context.Item.IsOutputExpired())
+                    {
+                        <MudTooltip Text="Expired" RootStyle="padding:3px;display:inline-flex;vertical-align:center">
+                            <MudIcon Icon="@Icons.Material.Filled.FileDownload" Size="Size.Small" 
+                                     Color="Color.Error" />
+                        </MudTooltip>
+                    }
+                    else
+                    {
+                        <MudIconButton Href=@($"/api/runs/{context.Item.Id.ToString()}/download") Target="_top"
+                                       Icon="@Icons.Material.Filled.FileDownload" Size="Size.Small"/>
+                    }
+                }
+            </CellTemplate>
+        </TemplateColumn>
     </Columns>
     <PagerContent>
         <MudDataGridPager T="PythonRun" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>

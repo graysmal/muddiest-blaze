@@ -49,6 +49,7 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.User).HasColumnName("user");
             entity.Property(e => e.Started).HasColumnName("started");
             entity.Property(e => e.Ended).HasColumnName("ended");
+            entity.Property(e => e.HasOutput).HasColumnName("has_output");
         });
         
         OnModelCreatingPartial(modelBuilder);

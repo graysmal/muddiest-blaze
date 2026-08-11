@@ -8,4 +8,11 @@ public class PythonRun
     public string User { get; set; } // TODO create relation to a users table or somehow relate to entra, idk.
     public DateTime Started { get; set; }
     public DateTime? Ended { get; set; }
+    public bool HasOutput { get; set; }
+
+    public bool IsOutputExpired()
+    {
+        var runPath = $"{Path.GetTempPath()}Scripts/run-{Id}";
+        return !File.Exists(Path.Combine(runPath, $"run-{Id}-output.zip"));
+    }
 }

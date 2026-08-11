@@ -44,7 +44,8 @@ public class PythonService
                 ScriptName =  script.Name,
                 Started =  DateTime.UtcNow,
                 User = auditScope.Event.CustomFields["preferred_username"].ToString(),
-                Status = "Running"
+                Status = "Running",
+                HasOutput = false
             });
             await pg.SaveChangesAsync();
             
@@ -122,21 +123,6 @@ public class PythonService
             await proc.WaitForExitAsync();
             proc.CancelErrorRead();
             proc.CancelOutputRead();
-            
-            // update run row
-            var run = pg.PythonRuns.First(r => r.Id == guid);
-            if (proc.ExitCode == 0)
-            {
-                run.Status = "Completed";
-                run.Ended = DateTime.UtcNow;
-                await pg.SaveChangesAsync();
-            }
-            else
-            {
-                run.Status = "Failed";
-                run.Ended = DateTime.UtcNow;
-                await pg.SaveChangesAsync();
-            }
 
             // zip up all output files and return list of files
             var postRunFiles = Directory.EnumerateFiles(pyRunDirPath);
@@ -153,7 +139,15 @@ public class PythonService
                 }
             }
             postRunFiles = postRunFiles.Select(f => Path.GetFileName(f));
-            onOutputZip.Invoke(postRunFiles.ToList());
+            var postRunFilesList = postRunFiles.ToList();
+            onOutputZip.Invoke(postRunFilesList);
+            
+            // update run row
+            var run = pg.PythonRuns.First(r => r.Id == guid);
+            run.Status = proc.ExitCode == 0?"Completed":"Failed";
+            run.Ended = DateTime.UtcNow;
+            run.HasOutput = postRunFilesList.Any();
+            await pg.SaveChangesAsync();
         }
     }
 }
