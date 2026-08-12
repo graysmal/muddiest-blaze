@@ -8,6 +8,7 @@ public class PythonRun
     public string User { get; set; } // TODO create relation to a users table or somehow relate to entra, idk.
     public DateTime Started { get; set; }
     public DateTime? Ended { get; set; }
+    public string? Params { get; set; }
     public bool HasOutput { get; set; }
 
     public bool IsOutputExpired()

@@ -1,7 +1,9 @@
+@using System.Text
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
 @using Microsoft.EntityFrameworkCore
 @inject PostgresContext Pg
+@inject IJSRuntime JSRuntime
 <style>
     .h-full {
         height: 100%;
@@ -33,7 +35,18 @@
         <PropertyColumn Property="x => x.Status" Title="Status" Resizable="true" />
         <PropertyColumn Property="x => x.Started.ToLocalTime()" Title="Started" Resizable="true" InitialDirection="SortDirection.Descending" />
         <PropertyColumn Property="x => x.Ended.HasValue?x.Ended.Value.ToLocalTime():x.Ended" Title="Ended" Resizable="true" />
-        <TemplateColumn Property="x => x.HasOutput" Title="Output" Resizable="true">
+        <TemplateColumn Title="Parameters" Resizable="true">
+            <CellTemplate>
+                @if (context.Item.Params != null)
+                {
+                    <MudTooltip Text=@($"{TruncateString(context.Item.Params, 64)}") RootStyle="padding:3px;display:inline-flex;vertical-align:center;">
+                        <MudIconButton OnClick=@(() => { DownloadJson(context.Item.Params, $"run-{context.Item.Id}-params.json");}) Target="_top"
+                                       Icon="@Icons.Material.Filled.FileDownload" Size="Size.Small"/>
+                    </MudTooltip>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+        <TemplateColumn Title="Output" Resizable="true">
             <CellTemplate>
                 @if (context.Item.HasOutput)
                 {
@@ -104,4 +117,24 @@
         var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
         return new GridData<PythonRun> {TotalItems = totalItems, Items = pagedData};
     }
+    
+    async Task DownloadJson(string content, string fileName)
+    {
+        var fileStream = new MemoryStream(new UTF8Encoding(true).GetBytes(content));
+        using var streamRef = new DotNetStreamReference(stream: fileStream);
+        await JSRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+
+    private string TruncateString(string input, int length)
+    {
+        if (input.Length <= length)
+        {
+            return input;
+        }
+        else
+        {
+            return input.Substring(0, length) + "...";
+        }
+    }
+
 }

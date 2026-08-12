@@ -19,6 +19,27 @@
 <ReconnectModal/>
 <script src="@Assets["_framework/blazor.web.js"]"></script>
 <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
+<script>
+    // Source - https://stackoverflow.com/a/75074836
+    // Posted by Axekan, modified by community. See post 'Timeline' for change history
+    // Retrieved 2026-08-11, License - CC BY-SA 4.0
+    
+    window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+        const arrayBuffer = await contentStreamReference.arrayBuffer();
+        const blob = new Blob([arrayBuffer]);
+        const url = URL.createObjectURL(blob);
+        const anchorElement = document.createElement('a');
+        anchorElement.href = url;
+
+        if (fileName) {
+            anchorElement.download = fileName;
+        }
+
+        anchorElement.click();
+        anchorElement.remove();
+        URL.revokeObjectURL(url);
+    }
+</script>
 
 </body>
 
