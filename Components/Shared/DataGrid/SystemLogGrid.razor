@@ -1,5 +1,6 @@
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
+@using Serilog
 @inject LokiService LokiService
 @inject IConfiguration Configuration
 
@@ -37,6 +38,9 @@
             <PagerContent>
                 <MudDataGridPager T="LogEvent" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
             </PagerContent>
+            <NoRecordsContent>
+                <MudText>No logs available or Loki instance not configured.</MudText>
+            </NoRecordsContent>
         </MudDataGrid>
 
 @code {
@@ -55,8 +59,18 @@
             End = _dateRange.End!.Value.AddDays(1), // to midnight of End date.
             Limit = 5000
         };
-        
-        IEnumerable<LogEvent> data = await LokiService.RunQueryRange(options, token);
+
+        IEnumerable<LogEvent> data;
+        try
+        {
+            data = await LokiService.RunQueryRange(options, token);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, ex.Message);
+            data = [];
+        }
+
         if (state.SortDefinitions.Any())
         {
             var firstSort = state.SortDefinitions.First();
