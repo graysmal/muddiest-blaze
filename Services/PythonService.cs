@@ -48,6 +48,7 @@ public class PythonService
                 HasOutput = false
             });
             await pg.SaveChangesAsync();
+            var run = pg.PythonRuns.First(r => r.Id == guid);
             
             // set up subprocess and output
             var proc = new Process();
@@ -105,6 +106,7 @@ public class PythonService
             if (_parameters != null)
             {
                 File.WriteAllText($"{pyRunDirPath}/params.json", _parameters.ToJsonString());
+                run.Params = _parameters.ToJsonString();
             }
             var pyFilePath = $"{pyRunDirPath}/script.py";
             // overwrite params
@@ -143,7 +145,6 @@ public class PythonService
             onOutputZip.Invoke(postRunFilesList);
             
             // update run row
-            var run = pg.PythonRuns.First(r => r.Id == guid);
             run.Status = proc.ExitCode == 0?"Completed":"Failed";
             run.Ended = DateTime.UtcNow;
             run.HasOutput = postRunFilesList.Any();
