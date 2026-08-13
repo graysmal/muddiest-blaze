@@ -6,7 +6,7 @@
         <CardHeaderContent>
             <MudButton 
                 Disabled="Script==null" 
-                OnClick="() => _expanded = !_expanded" 
+                OnClick="() => Expanded = !Expanded" 
                 Style="width: 100%;justify-content: unset">
                 <MudText Typo="Typo.h6">Parameters</MudText>
             </MudButton>
@@ -14,17 +14,17 @@
         <CardHeaderActions>
             <MudIconButton
                 Disabled="Script==null"
-                Icon="@(_expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
-                OnClick="() => _expanded = !_expanded"/>
+                Icon="@(Expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
+                OnClick="() => Expanded = !Expanded"/>
         </CardHeaderActions>
     </MudCardHeader>
-    <MudCollapse Expanded="@(Script != null && _expanded)">
+    <MudCollapse Expanded="@(Script != null && Expanded)">
         @if (Script != null)
         {
             <MudCardContent>
                 @if (Parameters != null)
                 {
-                    <MudGrid Justify="Justify.FlexStart">
+                    <MudGrid Justify="Justify.FlexStart" Class="pa-2">
                         @foreach (var item in Parameters.AsObject().AsEnumerable())
                         {
                             <PyParams_Field
@@ -43,6 +43,7 @@
             <MudCardActions Class="gap-2">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnRun">Run</MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="OnReset">Reset</MudButton>
+            <MudCheckBox T="bool" Label="Save Console .Log" @bind-Value="_saveConsole" />
             </MudCardActions>
         }
     </MudCollapse>
@@ -51,11 +52,12 @@
 @code {
     [Parameter] public PythonScript? Script { get; set; }
     [Parameter] public JsonNode? Parameters { get; set; }
-    [Parameter] public EventCallback<JsonNode?> OnRunClick { get; set; }
+    [Parameter] public EventCallback<(JsonNode?, bool)> OnRunClick { get; set; }
+    [Parameter] public bool Expanded { get; set; } = true;
+    private bool _saveConsole = false;
     private JsonNode? _originalParameters = null;
 
-    private bool _expanded = true;
-
+    
     protected override async Task OnParametersSetAsync()
     {
         if (Script != null)
@@ -64,8 +66,8 @@
 
     private async Task OnRun()
     {
-        _expanded = false;
-        await OnRunClick.InvokeAsync(Parameters);
+        Expanded = false;
+        await OnRunClick.InvokeAsync((Parameters, _saveConsole));
     }
     
     private async Task OnReset()
@@ -76,13 +78,4 @@
         }
     }
 
-    private async Task AddArrayItem(JsonArray array)
-    {
-        array.Add(JsonValue.Create(""));
-    }
-    
-    private async Task RemoveArrayItem(JsonArray array, int index)
-    {
-        array.RemoveAt(index);
-    }
 }
