@@ -39,7 +39,7 @@
             <CellTemplate>
                 @if (context.Item.Params != null)
                 {
-                    <MudTooltip Text=@($"{TruncateString(context.Item.Params, 64)}") RootStyle="padding:3px;display:inline-flex;vertical-align:center;">
+                    <MudTooltip Text=@($"{TruncateString(context.Item.Params, 64)}")>
                         <MudIconButton OnClick=@(() => { DownloadJson(context.Item.Params, $"run-{context.Item.Id}-params.json");}) Target="_top"
                                        Icon="@Icons.Material.Filled.FileDownload" Size="Size.Small"/>
                     </MudTooltip>
