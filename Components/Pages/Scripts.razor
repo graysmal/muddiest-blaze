@@ -92,14 +92,14 @@
             _pyparams.Expanded = true;
         }
     }
-    private async Task OnRun(JsonNode? parameters)
+    private async Task OnRun((JsonNode? parameters, bool saveConsole) args)
     {
         await _tabs.ActivatePanelAsync(0);
         if (_script != null)
         {
             _output = "";
             // TODO: script output and zip files for current run still updates if script is changed. could be verified by passing script to callback to check against _script. 
-            await Ps.RunAsync(_script, parameters,
+            await Ps.RunAsync(_script, args.parameters, args.saveConsole,
                 runGuid => 
                 { 
                     _runGuid = runGuid; 

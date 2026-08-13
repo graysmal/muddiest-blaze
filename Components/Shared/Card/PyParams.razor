@@ -43,6 +43,7 @@
             <MudCardActions Class="gap-2">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnRun">Run</MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="OnReset">Reset</MudButton>
+            <MudCheckBox T="bool" Label="Save Console .Log" @bind-Value="_saveConsole" />
             </MudCardActions>
         }
     </MudCollapse>
@@ -51,8 +52,9 @@
 @code {
     [Parameter] public PythonScript? Script { get; set; }
     [Parameter] public JsonNode? Parameters { get; set; }
-    [Parameter] public EventCallback<JsonNode?> OnRunClick { get; set; }
+    [Parameter] public EventCallback<(JsonNode?, bool)> OnRunClick { get; set; }
     [Parameter] public bool Expanded { get; set; } = true;
+    private bool _saveConsole = false;
     private JsonNode? _originalParameters = null;
 
     
@@ -65,7 +67,7 @@
     private async Task OnRun()
     {
         Expanded = false;
-        await OnRunClick.InvokeAsync(Parameters);
+        await OnRunClick.InvokeAsync((Parameters, _saveConsole));
     }
     
     private async Task OnReset()
@@ -74,16 +76,6 @@
         {
             Parameters = Script.GetParameterManifest();
         }
-    }
-
-    private async Task AddArrayItem(JsonArray array)
-    {
-        array.Add(JsonValue.Create(""));
-    }
-
-    private async Task RemoveArrayItem(JsonArray array, int index)
-    {
-        array.RemoveAt(index);
     }
 
 }

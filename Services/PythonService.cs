@@ -28,7 +28,7 @@ public class PythonService
         return scripts.ToList();
     }
 
-    public async Task RunAsync(PythonScript script, JsonNode? _parameters, Action<Guid>? onGuidMade = null, 
+    public async Task RunAsync(PythonScript script, JsonNode? parameters, bool saveConsole, Action<Guid>? onGuidMade = null, 
         Action<string>? onOutputLine = null, Action<List<string>> onOutputZip = null)
     {
         await using (var auditScope = await AuditScope.CreateAsync("Python:Run", () => new { }))
@@ -52,17 +52,20 @@ public class PythonService
             
             // set up subprocess and output
             var proc = new Process();
+            var consoleOutput = "";
             proc.StartInfo.FileName = "/usr/bin/uv";
             proc.StartInfo.RedirectStandardOutput = true;
             proc.StartInfo.RedirectStandardError = true;
             proc.OutputDataReceived += (s, e) =>
             {
+                consoleOutput += e.Data + "\n";
                 onOutputLine?.Invoke(e.Data);
             };
             proc.ErrorDataReceived += (s, e) =>
             {
                 if (!e.Data.IsWhiteSpace())
                 {
+                    consoleOutput += e.Data + "\n";
                     onOutputLine?.Invoke(e.Data);
                 }
             };
@@ -103,10 +106,10 @@ public class PythonService
                 File.Copy(file, Path.Combine(pyRunDirPath, Path.GetFileName(file)), true);
             }
 
-            if (_parameters != null)
+            if (parameters != null)
             {
-                File.WriteAllText($"{pyRunDirPath}/params.json", _parameters.ToJsonString());
-                run.Params = _parameters.ToJsonString();
+                File.WriteAllText($"{pyRunDirPath}/params.json", parameters.ToJsonString());
+                run.Params = parameters.ToJsonString();
             }
             var pyFilePath = $"{pyRunDirPath}/script.py";
             // overwrite params
@@ -125,6 +128,11 @@ public class PythonService
             await proc.WaitForExitAsync();
             proc.CancelErrorRead();
             proc.CancelOutputRead();
+
+            if (saveConsole)
+            {
+                File.WriteAllText($"{pyRunDirPath}/console.log", consoleOutput);
+            }
 
             // zip up all output files and return list of files
             var postRunFiles = Directory.EnumerateFiles(pyRunDirPath);
