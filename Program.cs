@@ -4,7 +4,6 @@ using BlazorApp1.Context;
 using BlazorApp1.Services;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using MudBlazor.Services;
@@ -16,6 +15,7 @@ using Serilog.Enrichers.Span;
 using Serilog.Events;
 using Serilog.Sinks.Grafana.Loki;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -115,36 +115,62 @@ builder.Services.AddHttpClient<LokiService>((services, client) =>
 });
 builder.Services.AddSingleton<PythonService>();
 
-builder.Services.AddDbContextFactory<PostgresContext>(options => 
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("PostgreSQL") ??
-        throw new InvalidOperationException("PostgreSQL connection string not configured.")));
-
+var dbProvider = builder.Configuration.GetValue<string>("Database:Provider");
+switch (dbProvider)
+{
+    case "PostgreSQL":
+        string pgConnectionString = builder.Configuration.GetConnectionString("PostgreSQL") ??
+                                  throw new InvalidOperationException("PostgreSQL connection string not configured.");
+        builder.Services.AddDbContextFactory<PostgresContext>(options =>
+        {
+            options.UseNpgsql(pgConnectionString);
+        });
+        Configuration.Setup()
+         .UsePostgreSql(config => config
+             .ConnectionString(pgConnectionString)
+             .TableName("audit_event")
+             .CustomColumn("event_date", ev => ev.StartDate)
+             .CustomColumn("event_type", ev => ev.EventType)
+             .CustomColumn("name", ev => ev.CustomFields["name"])
+             .CustomColumn("preferred_username", ev => ev.CustomFields["preferred_username"])
+             .CustomColumn("client_ip", ev => ev.CustomFields["client_ip"])
+             .CustomColumn("machine_name", ev => ev.CustomFields["machine_name"])
+             .CustomColumn("user_agent", ev => ev.CustomFields["user_agent"])
+         );
+        break;
+    case "SQLServer":
+        string msConnectionString = builder.Configuration.GetConnectionString("SQLServer") ??
+                                  throw new InvalidOperationException("SQLServer connection string not configured.");
+        builder.Services.AddDbContextFactory<PostgresContext>(options =>
+        {
+            options.UseSqlServer(msConnectionString);
+        });
+        Configuration.Setup()
+            .UseSqlServer(config => config
+                .ConnectionString(msConnectionString)
+                .TableName("audit_event")
+                .CustomColumn("event_date", ev => ev.StartDate)
+                .CustomColumn("event_type", ev => ev.EventType)
+                .CustomColumn("name", ev => ev.CustomFields["name"])
+                .CustomColumn("preferred_username", ev => ev.CustomFields["preferred_username"])
+                .CustomColumn("client_ip", ev => ev.CustomFields["client_ip"])
+                .CustomColumn("machine_name", ev => ev.CustomFields["machine_name"])
+                .CustomColumn("user_agent", ev => ev.CustomFields["user_agent"])
+            );
+        break;
+}
 
 Configuration.AddCustomAction(ActionType.OnScopeCreated, scope =>
-    {
-        var httpContext = httpContextAccessor.HttpContext;
-        if (httpContext is null) return;
-        
-        var (name, preferredUsername) =  GetLoggingClaims(httpContext.User);
-        scope.SetCustomField("name", name);
-        scope.SetCustomField("preferred_username", preferredUsername);
-        scope.SetCustomField("client_ip", httpContext.Connection.RemoteIpAddress?.ToString());
-        scope.SetCustomField("machine_name", Environment.MachineName);
-        scope.SetCustomField("user_agent", httpContext.Request.Headers.UserAgent.ToString());
-    });
-Configuration.Setup()
-    .UsePostgreSql(config => config
-        .ConnectionString(builder.Configuration.GetConnectionString("PostgreSQL"))
-        .TableName("audit_event")
-        .CustomColumn("event_date", ev => ev.StartDate)
-        .CustomColumn("event_type", ev => ev.EventType)
-        .CustomColumn("name", ev => ev.CustomFields["name"])
-        .CustomColumn("preferred_username", ev => ev.CustomFields["preferred_username"])
-        .CustomColumn("client_ip", ev => ev.CustomFields["client_ip"])
-        .CustomColumn("machine_name", ev => ev.CustomFields["machine_name"])
-        .CustomColumn("user_agent", ev => ev.CustomFields["user_agent"])
-    );
+{
+    var httpContext = httpContextAccessor.HttpContext;
+    if (httpContext is null) return;
+    var (name, preferredUsername) =  GetLoggingClaims(httpContext.User);
+    scope.SetCustomField("name", name);
+    scope.SetCustomField("preferred_username", preferredUsername);
+    scope.SetCustomField("client_ip", httpContext.Connection.RemoteIpAddress?.ToString());
+    scope.SetCustomField("machine_name", Environment.MachineName);
+    scope.SetCustomField("user_agent", httpContext.Request.Headers.UserAgent.ToString());
+});
 
 var app = builder.Build();
 app.UseForwardedHeaders();

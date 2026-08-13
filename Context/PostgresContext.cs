@@ -20,7 +20,8 @@ public partial class PostgresContext : DbContext
     public virtual DbSet<PythonRun> PythonRuns { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseNpgsql();
+    {
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
