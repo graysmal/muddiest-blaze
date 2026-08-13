@@ -24,7 +24,7 @@
             <MudCardContent>
                 @if (Parameters != null)
                 {
-                    <MudGrid Justify="Justify.FlexStart">
+                    <MudGrid Justify="Justify.FlexStart" Class="pa-2">
                         @foreach (var item in Parameters.AsObject().AsEnumerable())
                         {
                             <PyParams_Field

@@ -5,9 +5,12 @@
     .mud-card-header-actions {
         align-self: unset !important;
     }
+    .flex-unset {
+        flex: unset !important;
+    }
 </style>
 
-<MudCard Class="pa-2 ml-3" Elevation="0">
+<MudCard Class="ml-3" Elevation="0">
 @if (Value is JsonArray array)
 {
     <MudCardHeader Class="align-items-center pa-0">
@@ -54,7 +57,7 @@ else if (Value?.GetValueKind() is JsonValueKind.True or JsonValueKind.False)
 }
 else if (Value?.GetValueKind() == JsonValueKind.Number)
 {
-    @if (int.TryParse(OriginalValue?.ToString(), out _))
+    @if (Value.AsValue().TryGetValue<int>(out _))
     {
         <MudTextField T="int" Label="@Key" Text="@(Value.GetValue<int>().ToString())"
             ValueChanged="@(s => OnValueChanged.InvokeAsync(JsonValue.Create(s)))"/>
@@ -69,7 +72,7 @@ else if (Value?.GetValueKind() == JsonValueKind.String)
 {
     @if (DateTime.TryParse(Value.ToString(), out var dateValue))
     {
-        <MudDatePicker T="DateTime" Label="@Key" Date="@dateValue"
+        <MudDatePicker T="DateTime" Label="@Key" Date="@dateValue" Class="flex-unset" ShowToolbar="true"
             DateChanged="@(s => OnValueChanged.InvokeAsync(JsonValue.Create(s.Value.ToString("s"))))"/>
     }
     else
@@ -106,6 +109,7 @@ else if (Value?.GetValueKind() == JsonValueKind.String)
         JsonValue v when v.TryGetValue<bool>(out _) => JsonValue.Create(false),
         JsonValue v when v.TryGetValue<int>(out _) => JsonValue.Create(0),
         JsonValue v when v.TryGetValue<double>(out _) => JsonValue.Create(0.0),
+        JsonValue v when DateTime.TryParse(v.ToString(), out _) => JsonValue.Create(DateTime.UtcNow.ToString("s")),
         _ => JsonValue.Create("")
     };
 
