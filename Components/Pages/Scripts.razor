@@ -59,7 +59,7 @@
         <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20" KeepPanelsAlive="true">
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full overflow-scroll" StretchItems="StretchItems.Middle">
-                    <PyParams Script="@_script" Parameters="@_parameters" OnRunClick="OnRun"/>
+                    <PyParams @ref="_pyparams" Script="@_script" Parameters="@_parameters" OnRunClick="OnRun"/>
                     <ConsoleOutput Output="@_output"/>
                     <PyZipOutput ZippedFiles="_zippedFiles" Guid="_runGuid" />
                 </MudStack>
@@ -78,11 +78,19 @@
     private Guid _runGuid = Guid.Empty;
     private List<string> _zippedFiles = [];
     private MudTabs? _tabs = null!;
+    private PyParams? _pyparams = null!;
     
     private void OnScriptChanged(PythonScript script)
     {
+        if (_script != null && script.Name == _script.Name) return;
         _script = script;
         _parameters = _script.GetParameterManifest();
+        _output = "";
+        _zippedFiles = [];
+        if (_pyparams != null)
+        {
+            _pyparams.Expanded = true;
+        }
     }
     private async Task OnRun(JsonNode? parameters)
     {
@@ -90,6 +98,7 @@
         if (_script != null)
         {
             _output = "";
+            // TODO: script output and zip files for current run still updates if script is changed. could be verified by passing script to callback to check against _script. 
             await Ps.RunAsync(_script, parameters,
                 runGuid => 
                 { 

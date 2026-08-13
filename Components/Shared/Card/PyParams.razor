@@ -6,7 +6,7 @@
         <CardHeaderContent>
             <MudButton 
                 Disabled="Script==null" 
-                OnClick="() => _expanded = !_expanded" 
+                OnClick="() => Expanded = !Expanded" 
                 Style="width: 100%;justify-content: unset">
                 <MudText Typo="Typo.h6">Parameters</MudText>
             </MudButton>
@@ -14,11 +14,11 @@
         <CardHeaderActions>
             <MudIconButton
                 Disabled="Script==null"
-                Icon="@(_expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
-                OnClick="() => _expanded = !_expanded"/>
+                Icon="@(Expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
+                OnClick="() => Expanded = !Expanded"/>
         </CardHeaderActions>
     </MudCardHeader>
-    <MudCollapse Expanded="@(Script != null && _expanded)">
+    <MudCollapse Expanded="@(Script != null && Expanded)">
         @if (Script != null)
         {
             <MudCardContent>
@@ -52,10 +52,10 @@
     [Parameter] public PythonScript? Script { get; set; }
     [Parameter] public JsonNode? Parameters { get; set; }
     [Parameter] public EventCallback<JsonNode?> OnRunClick { get; set; }
+    [Parameter] public bool Expanded { get; set; } = true;
     private JsonNode? _originalParameters = null;
 
-    private bool _expanded = true;
-
+    
     protected override async Task OnParametersSetAsync()
     {
         if (Script != null)
@@ -64,7 +64,7 @@
 
     private async Task OnRun()
     {
-        _expanded = false;
+        Expanded = false;
         await OnRunClick.InvokeAsync(Parameters);
     }
     
@@ -80,9 +80,10 @@
     {
         array.Add(JsonValue.Create(""));
     }
-    
+
     private async Task RemoveArrayItem(JsonArray array, int index)
     {
         array.RemoveAt(index);
     }
+
 }
