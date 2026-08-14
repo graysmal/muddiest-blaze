@@ -1,3 +1,5 @@
+@using BlazorApp1.Services
+@inject PythonService Ps
 <style>
     .mud-collapse-wrapper-inner {
         height: 100%;
@@ -14,28 +16,33 @@
     }
     </style>
 
-<MudCard Outlined="true" Style=@(!_expanded?"max-height: 50px;":"")>
+<MudCard Outlined="true" Style=@(!Expanded?"max-height: 50px;":"")>
     <MudCardHeader Class="pt-0 pb-0 pl-0 pr-3">
         <CardHeaderContent>
             <MudButton 
-                OnClick="() => _expanded = !_expanded" 
+                OnClick="() => Expanded = !Expanded" 
                 Style="width: 100%;justify-content: unset">
                 <MudText Typo="Typo.h6">Console Output</MudText>
             </MudButton>
         </CardHeaderContent>
         <CardHeaderActions>
             <MudIconButton
-                Icon="@(_expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
-                OnClick="() => _expanded = !_expanded"/>
+                Icon="@(Expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
+                OnClick="() => Expanded = !Expanded"/>
         </CardHeaderActions>
     </MudCardHeader>
-    <MudCollapse Expanded="_expanded" Style="background-color: var(--mud-palette-dark);color: var(--mud-palette-dark-text);border-radius:3px">
+    <MudCollapse Expanded="Expanded" Style="background-color: var(--mud-palette-dark);color: var(--mud-palette-dark-text);border-radius:3px">
         <MudCardContent Class="console-content" Style="height: 100px;display:flex;flex-direction:column-reverse;
         overflow:scroll;align-items:start;position:relative">
-            @if (!Guid.Equals(Guid.Empty))
+            @if (Ps.IsRunActive(Guid))
             {
-                <MudIconButton Icon="@Icons.Material.Filled.Stop" Color="Color.Error"
-                               Style="position:absolute;top:8px;right:0" Size="Size.Large" OnClick=@(() => OnStopClick.InvokeAsync())/>
+                <MudElement Style="position:absolute;top:4px;right:0">
+                    <MudTooltip Text="Stop Process">
+                        <MudIconButton Icon="@Icons.Material.Filled.Stop" Color="Color.Error"
+                                       Size="Size.Large" OnClick=@(() => OnStopClick.InvokeAsync())/>
+                    </MudTooltip>
+                </MudElement>
+                
             }
             <MudPaper Elevation="0" Style="background-color: rgba(0,0,0,0);display: flex;flex-direction: column-reverse;">
 
@@ -60,5 +67,5 @@
     [Parameter] public string Output { get; set; }
     [Parameter] public Guid Guid { get; set; }
     [Parameter] public EventCallback OnStopClick { get; set; }
-    private bool _expanded = true;
+    [Parameter] public bool Expanded { get; set; } = true;
 }

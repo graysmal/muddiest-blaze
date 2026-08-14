@@ -61,7 +61,7 @@
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full overflow-scroll" StretchItems="StretchItems.Middle">
                     <PyParams @ref="_pyparams" Script="@_script" Parameters="@_parameters" OnRunClick="OnRun"/>
-                    <ConsoleOutput Output="@_output" Guid="_runGuid" OnStopClick="OnStop"/>
+                    <ConsoleOutput @ref="_console" Output="@_output" Guid="_runGuid" OnStopClick="OnStop"/>
                     <PyZipOutput ZippedFiles="_zippedFiles" Guid="_runGuid" />
                 </MudStack>
             </MudTabPanel>
@@ -80,6 +80,7 @@
     private List<string> _zippedFiles = [];
     private MudTabs? _tabs = null!;
     private PyParams? _pyparams = null!;
+    private ConsoleOutput _console = null!;
     
     private void OnScriptChanged(PythonScript script)
     {
@@ -88,6 +89,7 @@
         _parameters = _script.GetParameterManifest();
         _output = "";
         _zippedFiles = [];
+        _runGuid = Guid.Empty;
         if (_pyparams != null)
         {
             _pyparams.Expanded = true;
@@ -95,36 +97,48 @@
     }
     private async Task OnRun((JsonNode? parameters, bool saveConsole) args)
     {
-        await _tabs.ActivatePanelAsync(0);
+        if (_console != null)
+        {
+            _console.Expanded = true;
+        }
         if (_script != null)
         {
+            var _taskGuid = Guid.Empty;
             _output = "";
-            // TODO: script output and zip files for current run still updates if script is changed. could be verified by passing script to callback to check against _script. 
             await Ps.RunAsync(_script, args.parameters, args.saveConsole,
                 runGuid => 
                 { 
-                    _runGuid = runGuid; 
+                    _runGuid = runGuid;
+                    _taskGuid = runGuid;
                 },line =>
                 {
-                    InvokeAsync(() =>
+                    if (_taskGuid == _runGuid)
                     {
-                        _output += line + "\n";
-                        StateHasChanged();
-                    });
+                        InvokeAsync(() =>
+                        {
+                            _output += line + "\n";
+                            StateHasChanged();
+                        });
+                    }
                 }, zip =>
                 {
-                    InvokeAsync(() =>
+                    if (_taskGuid == _runGuid)
                     {
-                        _zippedFiles = zip;
-                        StateHasChanged();
-                    });
+                        InvokeAsync(() =>
+                        {
+                            _zippedFiles = zip;
+                            StateHasChanged();
+                        });
+                    }
                 });
+            _runGuid =  Guid.Empty;
         }
     }
 
-    private async Task OnStop()
+    private void OnStop()
     {
-        //TODO: cancel token;
+        Ps.Stop(_runGuid);
+        _output += "Process killed by user.";
     }
 
 }

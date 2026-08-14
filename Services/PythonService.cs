@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
@@ -12,7 +13,7 @@ namespace BlazorApp1.Services;
 public class PythonService
 {
     private readonly IDbContextFactory<PostgresContext> _postgresContextFactory;
-
+    private readonly ConcurrentDictionary<Guid, Process> _activeProcesses = new();
     public PythonService(IDbContextFactory<PostgresContext> postgresContextFactory)
     {
         _postgresContextFactory = postgresContextFactory;
@@ -95,10 +96,25 @@ public class PythonService
         // get list of file before running script to zip output later
         var preRunFiles = Directory.EnumerateFiles(pyRunDirPath).ToList();
         // run script
-        proc.StartInfo.FileName = $"{scriptPath}/.venv/Scripts/python.exe";
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            proc.StartInfo.FileName = $"{scriptPath}/.venv/Scripts/python.exe";
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            proc.StartInfo.FileName = $"{scriptPath}/.venv/bin/python";
+        }
         proc.StartInfo.Arguments = $"-u \"{pyRunDirPath}/script.py\"";
         proc.StartInfo.WorkingDirectory = pyRunDirPath;
+        _activeProcesses[guid] = proc;
         await RunWithOutput(proc);
+        if (!_activeProcesses.TryGetValue(guid, out _)) // process already removed. Stop implied to have been called.
+        {
+            run.Status = "Stopped";
+            run.Ended = DateTime.UtcNow;
+            await pg.SaveChangesAsync();
+            return;
+        }
+        _activeProcesses.TryRemove(guid, out _);
 
         if (saveConsole)
         {
@@ -127,6 +143,21 @@ public class PythonService
         run.Ended = DateTime.UtcNow;
         run.HasOutput = postRunFilesList.Any();
         await pg.SaveChangesAsync();
+    }
+
+    public bool IsRunActive(Guid guid)
+    {
+        return _activeProcesses.TryGetValue(guid, out _);
+    }
+
+    public void Stop(Guid guid)
+    {
+        // Remove immediately from active runs so RunAsync can recognize Stopped processes.
+        if (_activeProcesses.TryGetValue(guid, out var proc))
+        {
+            proc.Kill(entireProcessTree:true);
+            _activeProcesses.TryRemove(guid, out _);
+        }
     }
 
     private static async Task CreateScriptVenv(Process proc, string path)
