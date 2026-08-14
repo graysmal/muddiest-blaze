@@ -115,7 +115,8 @@ builder.Services.AddHttpClient<LokiService>((services, client) =>
 });
 builder.Services.AddSingleton<PythonService>();
 
-var dbProvider = builder.Configuration.GetValue<string>("Database:Provider");
+var dbProvider = builder.Configuration.GetValue<string>("Database:Provider") ??
+                 throw new InvalidOperationException("Database Provider not specified.");
 switch (dbProvider)
 {
     case "PostgreSQL":
