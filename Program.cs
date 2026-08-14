@@ -197,7 +197,7 @@ app.MapGet("/api/runs/{id:guid}/download", async (Guid id, PostgresContext db) =
     if (run is null) { return Results.NotFound(); }
     var zipPath = $"{Path.GetTempPath()}Scripts/run-{id}/run-{id}-output.zip";
     if (!File.Exists(zipPath)) { return Results.NotFound(); }
-    return Results.File(zipPath, "application/zip", $"run-{id}-output.zip");
+    return Results.File(zipPath, "application/zip", $"run-{run.ScriptName}-{run.Started:s}-output.zip");
 });
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
