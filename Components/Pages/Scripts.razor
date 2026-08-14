@@ -1,4 +1,5 @@
 @page "/scripts"
+@using System.Diagnostics
 @using System.Text.Json.Nodes
 @using BlazorApp1.Components.Shared.DataGrid
 @using BlazorApp1.Components.Shared.Card
@@ -60,7 +61,7 @@
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full overflow-scroll" StretchItems="StretchItems.Middle">
                     <PyParams @ref="_pyparams" Script="@_script" Parameters="@_parameters" OnRunClick="OnRun"/>
-                    <ConsoleOutput Output="@_output"/>
+                    <ConsoleOutput Output="@_output" Guid="_runGuid" OnStopClick="OnStop"/>
                     <PyZipOutput ZippedFiles="_zippedFiles" Guid="_runGuid" />
                 </MudStack>
             </MudTabPanel>
@@ -119,6 +120,11 @@
                     });
                 });
         }
+    }
+
+    private async Task OnStop()
+    {
+        //TODO: cancel token;
     }
 
 }
