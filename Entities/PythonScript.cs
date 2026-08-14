@@ -10,12 +10,25 @@ public class PythonScript
     {
         return File.ReadAllText($"./Scripts/{Name}/script.py");
     }
-    
+
+    public async Task SetContent(string content)
+    {
+        await File.WriteAllTextAsync($"./Scripts/{Name}/script.py", content);
+    }
+
     public List<PythonPackage> GetRequirements()
     {
+        if (!File.Exists($"./Scripts/{Name}/requirements.txt")) return [];
         var reqTxt =  File.ReadAllText($"./Scripts/{Name}/requirements.txt");
         return reqTxt.Split('\n').Where(line => !string.IsNullOrWhiteSpace(line))
             .Select(line => PythonPackage.FromString(line)).ToList();
+    }
+    
+    public void SetRequirements(List<PythonPackage> requirements)
+    {
+        // TODO audit log
+        var reqTxt = string.Join("\n", requirements.Select(p => p.ToString()));
+        File.WriteAllText($"./Scripts/{Name}/requirements.txt", reqTxt);
     }
 
     public JsonNode? GetParameterManifest()

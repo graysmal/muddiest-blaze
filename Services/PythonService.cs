@@ -29,6 +29,11 @@ public class PythonService
         return scripts.ToList();
     }
 
+    public static void DeleteScript(PythonScript script)
+    {
+        Directory.Delete($"./Scripts/{script.Name}", true);
+    }
+
     public async Task RunAsync(PythonScript script, JsonNode? parameters, bool saveConsole, Action<Guid>? onGuidMade = null, 
         Action<string>? onOutputLine = null, Action<List<string>>? onOutputZip = null)
     {

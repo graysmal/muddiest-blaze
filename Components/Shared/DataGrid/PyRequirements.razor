@@ -1,0 +1,117 @@
+@using BlazorApp1.Entities
+@inject IDialogService DialogService
+
+<style>
+    .mud-table-pagination {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    .mud-drop-container {
+        flex-grow: 1;
+    }
+</style>
+<MudDataGrid @ref="_grid" T="PythonPackage" Items="_requirements" Dense="true" Elevation="0" FixedHeader="true" Style="width: 360px;"
+             Hover="true" EditMode="DataGridEditMode.Cell" ReadOnly="false" Validator="_validator" Class="d-flex flex-column"
+             CommittedItemChanges="OnLocalChange" RowsPerPage="100">
+    <Columns>
+        <PropertyColumn Property="x => x.Name" Title="Name" Sortable="false"/>
+        <PropertyColumn Property="x => x.Version" Title="Version" Sortable="false"/>
+        <TemplateColumn>
+            <EditTemplate>
+                <MudIconButton Size="Size.Small"
+                               Icon="@Icons.Material.Filled.Delete"
+                               OnClick="() => OnDelete(context.Item)"></MudIconButton>
+            </EditTemplate>
+        </TemplateColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText>No requirements found.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Add" OnClick="OnAdd"></MudIconButton>
+        <MudSpacer />
+        <MudTooltip Text=@GetCommitTooltip()>
+            <MudButton Disabled=@(!_validator.IsValid || !IsChanged())  OnClick="OnCommit">Commit Changes</MudButton>
+        </MudTooltip>
+        <MudSpacer />
+        <MudTooltip Text=@GetUndoTooltip()>
+            <MudButton Disabled=@(!IsChanged())  OnClick="SetRequirementsList">Undo Changes</MudButton>
+        </MudTooltip>
+    </PagerContent>
+</MudDataGrid>
+
+
+@code {
+    [Parameter] public PythonScript? Script { get; set; }
+
+    private MudDataGrid<PythonPackage> _grid;
+    private DataGridRowValidator _validator = new DataGridRowValidator();
+    private List<PythonPackage> _requirements = new List<PythonPackage>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        SetRequirementsList();
+        await Task.Delay(10);
+        _validator.Validate();
+    }
+
+    private void SetRequirementsList()
+    {
+        if (Script != null)
+        {
+            _requirements = Script.GetRequirements();
+        }
+    }
+
+    private async Task OnDelete(PythonPackage requirement)
+    {
+        _requirements.Remove(requirement);
+        await Task.Delay(10);
+        _validator.Validate();
+    }
+
+    private async Task OnAdd()
+    {
+        _requirements.Add(new PythonPackage { Name = "", Version = "" });
+        await Task.Delay(10);
+        _validator.Validate();
+    }
+    
+    private async Task OnCommit()
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Commit requirement changes",
+            $"Are you sure you want to update the requirements for this script?", // list changes for script.
+            "Commit",
+            "Cancel");
+        if (result == true)
+        {
+            Script?.SetRequirements(_requirements);
+        }
+    }
+
+    private Task<DataGridEditFormAction> OnLocalChange(PythonPackage item)
+    {
+        StateHasChanged();
+        return Task.FromResult(DataGridEditFormAction.Close);
+    }
+
+    private bool IsChanged()
+    {
+        if (Script == null) return false;
+        return !_requirements.SequenceEqual(Script.GetRequirements());
+    }
+
+    private string GetCommitTooltip()
+    {
+        if (!_validator.IsValid) return "Validation errors";
+        if (!IsChanged()) return "No changes";
+        return "";
+    }
+    private string GetUndoTooltip()
+    {
+        if (!IsChanged()) return "No changes";
+        return "";
+    }
+}

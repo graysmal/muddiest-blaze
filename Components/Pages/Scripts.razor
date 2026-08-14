@@ -1,5 +1,4 @@
 @page "/scripts"
-@using System.Diagnostics
 @using System.Text.Json.Nodes
 @using BlazorApp1.Components.Shared.DataGrid
 @using BlazorApp1.Components.Shared.Card
@@ -8,6 +7,7 @@
 @using BlazorApp1.Services
 @inject PythonService Ps
 @inject PostgresContext Pg
+@inject NavigationManager NavigationManager
 <style>
     /** { outline: 1px solid black;
         outline-offset: -1px; }*/
@@ -67,6 +67,12 @@
             </MudTabPanel>
             <MudTabPanel Text="History">
                 <PyScriptHistory Script="_script"/>
+            </MudTabPanel>
+            <MudTabPanel Text="Contents">
+                <MudStack Row="true" Style="height:100%;width:100%" StretchItems="StretchItems.Start">
+                    <PyContent Script="@_script" OnDeleted="Refresh"/>
+                    <PyRequirements Script="@_script"/>
+                </MudStack>
             </MudTabPanel>
         </MudTabs>
     </MudStack>
@@ -140,5 +146,12 @@
         Ps.Stop(_runGuid);
         _output += "Process killed by user.";
     }
+
+    private async Task Refresh()
+    {
+        NavigationManager.Refresh(true);
+    }
+
+}
 
 }

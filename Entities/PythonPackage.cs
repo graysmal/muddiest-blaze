@@ -1,6 +1,6 @@
 namespace BlazorApp1.Entities;
 
-public class PythonPackage
+public record PythonPackage
 {
     public string Name { get; set; }
     public string Version { get; set; }

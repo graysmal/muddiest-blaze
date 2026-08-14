@@ -1,0 +1,80 @@
+@using BlazorApp1.Entities
+@using BlazorApp1.Services
+@inject IDialogService DialogService
+<style>
+    .mud-input-control-input-container {
+        height:100%;
+    }
+    textarea {
+        height:100% !important;
+    }
+</style>
+<MudCard Style="height:100%;width:100%" Elevation="0">
+    <MudTextField T="string"
+        Label="Script Contents"
+        Disabled="@(Script==null)"
+        Variant="Variant.Outlined"
+        Sizing="InputSizing.Auto"
+        @bind-Text="_scriptContent"
+        Immediate="true" Style="height:100%"/>
+    <MudStack Row="true">
+        <MudButton Color="Color.Error" Disabled="Script==null" OnClick="OnDelete">Delete Script</MudButton>
+        <MudSpacer/>
+        <MudTooltip Text=@(!IsChanged() ? "No changes" : "")>
+            <MudButton Disabled="!IsChanged()" OnClick="OnCommit">Commit Changes</MudButton>
+            <MudButton Disabled="!IsChanged()" OnClick="SetScriptContent">Undo Changes</MudButton>
+        </MudTooltip>
+    </MudStack>
+</MudCard>
+@code {
+    [Parameter] public PythonScript? Script { get; set; }
+    [Parameter] public EventCallback OnDeleted { get; set; }
+    private string _scriptContent = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        SetScriptContent();
+    }
+
+    private void SetScriptContent()
+    {
+        if (Script != null)
+        {
+            _scriptContent = Script.GetContent();
+        }
+    }
+
+    private async Task OnCommit()
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Commit script changes",
+            $"Are you sure you want to update this script?", // list changes for script.
+            "Commit",
+            "Cancel");
+        if (result == true)
+        {
+            await Script!.SetContent(_scriptContent);
+        }
+    }
+
+    private async Task OnDelete()
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Delete script",
+            $"Are you sure you want to delete this script?\nThis action is irreversible.", // list changes for script.
+            "Delete",
+            "Cancel");
+        if (result == true)
+        {
+            PythonService.DeleteScript(Script!);
+            Script = null;
+            await OnDeleted.InvokeAsync();
+        }
+    }
+
+    private bool IsChanged()
+    {
+        if (Script == null) return false;
+        return _scriptContent != Script.GetContent();
+    }
+}
