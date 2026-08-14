@@ -4,8 +4,10 @@ using BlazorApp1.Context;
 using BlazorApp1.Services;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using MudBlazor;
 using MudBlazor.Services;
 using Prometheus;
 using Serilog;
@@ -15,7 +17,6 @@ using Serilog.Enrichers.Span;
 using Serilog.Events;
 using Serilog.Sinks.Grafana.Loki;
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,6 +90,7 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices()
+    .AddMudMarkdownServices()
     .AddAuthorization()
     .AddControllersWithViews()
     .AddMicrosoftIdentityUI();

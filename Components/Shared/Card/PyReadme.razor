@@ -1,0 +1,130 @@
+@using BlazorApp1.Entities
+@inject IDialogService Ds
+<style>
+    .mud-input-control-input-container {
+        height:100%;
+    }
+    textarea {
+        height:100% !important;
+    }
+</style>
+@if (Script == null)
+{
+    <MudText Class="pa-2">No script selected.</MudText>
+}
+else if (_readmeContent == null)
+{
+    <MudText Class="pa-2">No README.md configured.</MudText>
+    <MudButton StartIcon="@Icons.Material.Filled.Add" Color="Color.Primary"
+               OnClick="OnCreateReadme">Create README.md</MudButton>
+}
+else
+{
+    if (_editing)
+    {
+        <MudCard Style="height:100%;width:100%" Elevation="0">
+            <MudTextField T="string"
+                          Label="README.md Contents"
+                          Variant="Variant.Outlined"
+                          Sizing="InputSizing.Auto"
+                          @bind-Text="_readmeContent"
+                          Immediate="true" Style="height:100%"/>
+            <MudStack Row="true">
+                <MudButton Color="Color.Error" OnClick="OnDelete">Delete README</MudButton>
+                <MudSpacer/>
+                <MudTooltip Text=@(!IsChanged() ? "No changes" : "")>
+                    <MudButton Disabled="!IsChanged()" OnClick="OnCommit">Commit Changes</MudButton>
+                    <MudButton Disabled="!IsChanged()" OnClick="SetReadmeContent">Undo Changes</MudButton>
+                </MudTooltip>
+            </MudStack>
+        </MudCard>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" Style="position:absolute;top:8px;right:2px"
+                       Size="Size.Large" OnClick="OnStopEdit"/>
+    }
+    else
+    {
+        <MudMarkdown Value="@_readmeContent" SourceType="MarkdownSourceType.RawValue"/>
+        <MudIconButton Icon="@Icons.Material.Filled.Edit" Style="position:absolute;top:8px;right:2px"
+                       Size="Size.Large" OnClick="OnStartEdit"/>
+    }
+}
+@code {
+    [Parameter] public PythonScript? Script { get; set; }
+    private string? _readmeContent;
+    private bool _editing;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        SetReadmeContent();
+    }
+    
+    private void SetReadmeContent()
+    {
+        if (Script != null)
+        {
+            _readmeContent = Script.GetReadmeContent();
+        }
+    }
+
+    private async Task OnCreateReadme()
+    {
+        await Script!.SetReadmeContent("");
+        await OnParametersSetAsync();
+        OnStartEdit();
+    }
+
+    private void OnStartEdit()
+    {
+        _editing = true;
+    }
+    private async Task OnStopEdit()
+    {
+        bool? result = true;
+        if (IsChanged())
+        {
+            result = await Ds.ShowMessageBoxAsync(
+                "Cancel README Changes",
+                $"Are you sure you want to discard your changes?", // list changes for script.
+                "Discard",
+                "Cancel");
+        }
+        if (result == true)
+        {
+            _editing = false;
+            await OnParametersSetAsync();
+        }
+    }
+
+    private async Task OnDelete()
+    {
+        var result = await Ds.ShowMessageBoxAsync(
+            "Delete script",
+            $"Are you sure you want to delete this script's README.md?\nThis action is irreversible.",
+            "Delete",
+            "Cancel");
+        if (result == true)
+        {
+            Script!.DeleteReadme();
+            _editing = false;
+            await OnParametersSetAsync();
+        }
+    }
+    private bool IsChanged()
+    {
+        return _readmeContent != Script!.GetReadmeContent();
+    }
+    private async Task OnCommit()
+    {
+        var result = await Ds.ShowMessageBoxAsync(
+            "Commit README changes",
+            $"Are you sure you want to update this script's README.md?", // list changes for script.
+            "Commit",
+            "Cancel");
+        if (result == true)
+        {
+            await Script!.SetReadmeContent(_readmeContent!);
+            OnStopEdit();
+        }
+    }
+
+}

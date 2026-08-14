@@ -57,7 +57,11 @@
                 Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToLocalTime().ToShortDateString())
             </MudText>
         </MudStack>
-        <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20" KeepPanelsAlive="true">
+        <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20"
+                 ActivePanelIndex="1">
+            <MudTabPanel Text="Info">
+                <PyReadme Script="_script"/>
+            </MudTabPanel>
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full overflow-scroll" StretchItems="StretchItems.Middle">
                     <PyParams @ref="_pyparams" Script="@_script" Parameters="@_parameters" OnRunClick="OnRun"/>
@@ -151,7 +155,5 @@
     {
         NavigationManager.Refresh(true);
     }
-
-}
 
 }
