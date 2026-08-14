@@ -30,7 +30,7 @@
                             <PyParams_Field
                                 Key="@item.Key"
                                 Value="@item.Value"
-                                OriginalValue="@_originalParameters"
+                                OriginalValue="@_originalParameters?[item.Key]"
                                 OnValueChanged="@(v => Parameters[item.Key] = v)"/>
                         }
                     </MudGrid>
