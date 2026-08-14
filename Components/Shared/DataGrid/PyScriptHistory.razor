@@ -1,9 +1,11 @@
 @using System.Text
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
 @inject PostgresContext Pg
 @inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthStateProvider
 <style>
     .h-full {
         height: 100%;
@@ -78,10 +80,18 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-        
+        _grid.FilterDefinitions.Clear();
+        var username = (await AuthStateProvider.GetAuthenticationStateAsync()).User.FindFirst("preferred_username")?.Value;
+        _grid.FilterDefinitions.Add(new FilterDefinition<PythonRun>
+        {
+            Id = Guid.NewGuid(),
+            Title = "User",
+            Column = _grid.RenderedColumns.First(x => x.Title == "User"),
+            Operator = "equals",
+            Value = username
+        });
         if (Script != null)
         {
-            _grid.FilterDefinitions.Clear();
             _grid.FilterDefinitions.Add(new FilterDefinition<PythonRun>
             {
                 Id = Guid.NewGuid(),

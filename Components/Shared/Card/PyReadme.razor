@@ -38,13 +38,13 @@ else
                 </MudTooltip>
             </MudStack>
         </MudCard>
-        <MudIconButton Icon="@Icons.Material.Filled.Close" Style="position:absolute;top:8px;right:2px"
+        <MudIconButton Icon="@Icons.Material.Filled.Close" Style="position:absolute;top:12px;right:6px"
                        Size="Size.Large" OnClick="OnStopEdit"/>
     }
     else
     {
         <MudMarkdown Value="@_readmeContent" SourceType="MarkdownSourceType.RawValue"/>
-        <MudIconButton Icon="@Icons.Material.Filled.Edit" Style="position:absolute;top:8px;right:2px"
+        <MudIconButton Icon="@Icons.Material.Filled.Edit" Style="position:absolute;top:12px;right:6px"
                        Size="Size.Large" OnClick="OnStartEdit"/>
     }
 }

@@ -24,6 +24,12 @@
                              Style=@($"flex-direction:row-reverse;" + (context.Item == Script ? "background-color: var(--mud-palette-primary);" : ""))>
                     <MudTooltip Text="@context.Item.Name" Placement="Placement.Right" RootStyle="width:100%;overflow:clip;text-overflow:ellipsis;" Disabled=@(context.Item.Name.Length < 20)>
                         @context.Item.Name
+                        <MudElement Style="display:block">
+                        @foreach (var tag in context.Item.GetTags())
+                        {
+                            <MudChip T="string" Text="@tag" Size="Size.Small"/>
+                        }
+                        </MudElement>
                     </MudTooltip>
                 </MudListItem>
             </CellTemplate>
@@ -44,6 +50,9 @@
         if (string.IsNullOrWhiteSpace(_searchString))
             return true;
         if (x.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        // turn tag list into space separated string of all tags
+        if (string.Join(" ", x.GetTags()).Contains(_searchString, StringComparison.OrdinalIgnoreCase))
             return true;
         return false;
     };

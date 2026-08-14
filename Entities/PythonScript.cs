@@ -64,6 +64,19 @@ public class PythonScript
         File.Delete($"./Scripts/{Name}/README.md");
     }
 
+    public List<string> GetTags()
+    {
+        try
+        {
+            var scriptJson = File.ReadAllText($"./Scripts/{Name}/script.json");
+            return JsonNode.Parse(scriptJson)["tags"].AsArray().Select(tag => tag.ToString()).ToList();
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
     public DateTime GetDateCreated()
     {
         return File.GetCreationTimeUtc($"./Scripts/{Name}").ToLocalTime();
