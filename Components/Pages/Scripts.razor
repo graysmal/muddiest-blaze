@@ -50,12 +50,16 @@
                                   .FirstOrDefault()?.Started.ToLocalTime().ToString())
                 </MudText>
             </MudTooltip>
-            <MudText Style="cursor:default">
-                Modified: @(_script == null ? "##/##/####" : _script.GetDateModified().ToLocalTime().ToShortDateString())
-            </MudText>
-            <MudText Style="cursor:default">
-                Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToLocalTime().ToShortDateString())
-            </MudText>
+            <MudTooltip Text=@(_script == null?"":_script.GetDateModified().ToLocalTime().ToLongTimeString())>
+                <MudText Style="cursor:default">
+                    Modified: @(_script == null ? "##/##/####" : _script.GetDateModified().ToLocalTime().ToShortDateString())
+                </MudText>
+            </MudTooltip>
+            <MudTooltip Text=@(_script == null?"":_script.GetDateCreated().ToLocalTime().ToLongTimeString())>
+                <MudText Style="cursor:default">
+                    Created: @(_script == null ? "##/##/####" : _script.GetDateCreated().ToLocalTime().ToShortDateString())
+                </MudText>
+            </MudTooltip>
         </MudStack>
         <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20"
                  ActivePanelIndex="1">
