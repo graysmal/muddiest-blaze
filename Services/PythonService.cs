@@ -7,6 +7,7 @@ using Audit.Core;
 using BlazorApp1.Context;
 using BlazorApp1.Entities;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace BlazorApp1.Services;
 
@@ -17,6 +18,20 @@ public class PythonService
     public PythonService(IDbContextFactory<PostgresContext> postgresContextFactory)
     {
         _postgresContextFactory = postgresContextFactory;
+        // ensure that python is installed and install it if it isn't
+        var proc = new Process();
+        if (!IsPythonInstalled())
+        {
+            // TODO: install python.
+        }
+        
+        // ensure that uv is installed and install it if it isn't
+        if (IsUvInstalled()) return;
+        Log.Information("uv not found on system. Ensuring pip module.");
+        _ = EnsurePip(proc);
+        Log.Information("Installing uv.");
+        _ = InstallUv(proc);
+        proc.Dispose();
     }
     
     public static List<PythonScript> GetPythonScripts()
@@ -39,7 +54,6 @@ public class PythonService
     {
         await using var auditScope = await AuditScope.CreateAsync("Python:Run", () => new { });
         // create run row in pg db table
-        // TODO: set to setting up while making venv if necessary
         var pg = await _postgresContextFactory.CreateDbContextAsync();
         var guid = Guid.NewGuid();
         var run = new PythonRun
@@ -164,7 +178,17 @@ public class PythonService
             _activeProcesses.TryRemove(guid, out _);
         }
     }
-
+    
+    private static async Task RunWithOutput(Process proc)
+    {
+        proc.Start();
+        proc.BeginOutputReadLine();
+        proc.BeginErrorReadLine();
+        await proc.WaitForExitAsync();
+        proc.CancelErrorRead();
+        proc.CancelOutputRead();
+    }
+    
     private static async Task CreateScriptVenv(Process proc, string path)
     {
         proc.StartInfo.FileName = "uv";
@@ -181,104 +205,59 @@ public class PythonService
         await RunWithOutput(proc);
     }
 
-    private static async Task RunWithOutput(Process proc)
-    {
-        proc.Start();
-        proc.BeginOutputReadLine();
-        proc.BeginErrorReadLine();
-        await proc.WaitForExitAsync();
-        proc.CancelErrorRead();
-        proc.CancelOutputRead();
-    }
 
-    private async Task<bool> VerifyPythonInstall(Process proc)
+    private static bool IsPythonInstalled()
     {
-        proc.StartInfo.Arguments = "--version";
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            proc.StartInfo.FileName = "python";
-            proc.Start();
-            proc.BeginOutputReadLine();
-            proc.BeginErrorReadLine();
-            await proc.WaitForExitAsync();
-            proc.CancelErrorRead();
-            proc.CancelOutputRead();
-            // TODO: check output of run to return true/false.
+            // TODO: check if python is installed on windows. need to find install location.
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            proc.StartInfo.FileName = "/usr/bin/python";
-            proc.Start();
-            proc.BeginOutputReadLine();
-            proc.BeginErrorReadLine();
-            await proc.WaitForExitAsync();
-            proc.CancelErrorRead();
-            proc.CancelOutputRead();
-            // TODO: check output of run to return true/false.
+            return File.Exists("/usr/bin/python");
         }
-        
-        return true;
-    }
-    
-    private async Task<bool> VerifyUVInstall(Process proc)
-    {
-        proc.StartInfo.Arguments = "--version";
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            proc.StartInfo.FileName = "uv";
-            proc.Start();
-            proc.BeginOutputReadLine();
-            proc.BeginErrorReadLine();
-            await proc.WaitForExitAsync();
-            proc.CancelErrorRead();
-            proc.CancelOutputRead();
-            // TODO: check output of run to return true/false.
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            proc.StartInfo.FileName = "/usr/bin/uv";
-            proc.Start();
-            proc.BeginOutputReadLine();
-            proc.BeginErrorReadLine();
-            await proc.WaitForExitAsync();
-            proc.CancelErrorRead();
-            proc.CancelOutputRead();
-            // TODO: check output of run to return true/false.
-        }
-
-        return true;
+        return false;
     }
 
-    private async Task InstallPython(Process proc)
+    private static async Task InstallPython(Process proc)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             proc.StartInfo.FileName = "winget";
             proc.StartInfo.Arguments = "install -e --id Python.Python.3 --silent";
-            proc.BeginOutputReadLine();
-            proc.BeginErrorReadLine();
-            proc.Start();
-            await  proc.WaitForExitAsync();
-            proc.CancelErrorRead();
-            proc.CancelOutputRead();
+            await RunWithOutput(proc);
             // TODO: verify this works.
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            // TODO: install python on linux, may depend on distro, may require permissions
+            // TODO: install python on linux, may depend on distro, may require permissions, luckily python is installed on most distros.
         }
     }
+    
+    private static bool IsUvInstalled()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            // TODO: check if uv is installed on windows. need to find install location.
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            return File.Exists("/usr/bin/uv");
+        }
+        return false;
+    }
 
-    private async Task InstallUV(Process proc)
+    private static async Task EnsurePip(Process proc)
+    {
+        proc.StartInfo.FileName = "python";
+        proc.StartInfo.Arguments = "-m ensurepip --upgrade";
+        await RunWithOutput(proc);
+    }
+    
+    private static async Task InstallUv(Process proc)
     {
         proc.StartInfo.FileName = "python";
         proc.StartInfo.Arguments = "-m pip install uv";
-        proc.BeginOutputReadLine();
-        proc.BeginErrorReadLine();
-        proc.Start();
-        await  proc.WaitForExitAsync();
-        proc.CancelErrorRead();
-        proc.CancelOutputRead();
-        // TODO: verify this works. likely that pip may need to be installed as well.
+        await RunWithOutput(proc);
     }
 }
