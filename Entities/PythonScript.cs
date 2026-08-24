@@ -48,22 +48,6 @@ public class PythonScript
         }
     }
 
-    public string? GetReadmeContent()
-    {
-        var path = $"./Scripts/{Name}/README.md";
-        return !File.Exists(path) ? null : File.ReadAllText(path);
-    }
-
-    public async Task SetReadmeContent(string content)
-    {
-        await File.WriteAllTextAsync($"./Scripts/{Name}/README.md", content);
-    }
-
-    public void DeleteReadme()
-    {
-        File.Delete($"./Scripts/{Name}/README.md");
-    }
-
     public List<string> GetTags()
     {
         try
