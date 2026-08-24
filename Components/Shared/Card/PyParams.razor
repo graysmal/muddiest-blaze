@@ -42,7 +42,7 @@
             </MudCardContent>
             <MudCardActions Class="gap-2">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnRun">Run</MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="OnReset">Reset</MudButton>
+                <MudButton Disabled="Parameters==null" Variant="Variant.Filled" Color="Color.Default" OnClick="OnReset">Reset</MudButton>
             <MudCheckBox T="bool" Label="Save Console .Log" @bind-Value="_saveConsole" />
             </MudCardActions>
         }

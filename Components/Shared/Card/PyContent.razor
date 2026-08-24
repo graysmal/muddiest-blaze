@@ -20,7 +20,7 @@
     <MudStack Row="true">
         <MudButton Color="Color.Error" Disabled="Script==null" OnClick="OnDelete">Delete Script</MudButton>
         <MudSpacer/>
-        <MudTooltip Text=@(!IsChanged() ? "No changes" : "")>
+        <MudTooltip Text=@(!IsChanged() ? "No changes" : "") Placement="Placement.Top">
             <MudButton Disabled="!IsChanged()" OnClick="OnCommit">Commit Changes</MudButton>
             <MudButton Disabled="!IsChanged()" OnClick="SetScriptContent">Undo Changes</MudButton>
         </MudTooltip>
