@@ -61,8 +61,7 @@
                 </MudText>
             </MudTooltip>
         </MudStack>
-        <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20"
-                 ActivePanelIndex="1">
+        <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20">
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full overflow-scroll" StretchItems="StretchItems.Middle">
                     <PyParams @ref="_pyparams" Script="@_script" Parameters="@_parameters" OnRunClick="OnRun"/>

@@ -1,5 +1,6 @@
 @using BlazorApp1.Services
 @inject PythonService Ps
+@inject IJSRuntime Js
 <style>
     .mud-collapse-wrapper-inner {
         height: 100%;
@@ -12,10 +13,17 @@
     }
     .mud-collapse-wrapper-inner:has(.console-content) {
         display:flex;
-        flex-direction:column-reverse;
     }
-    </style>
-
+</style>
+<script>
+    window.scrollToBottom = async (element) => {
+        const threshold = 50;
+        const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < threshold;
+        if (isNearBottom) {
+            element.scrollTop = element.scrollHeight;    
+        }
+    }
+    </script>
 <MudCard Outlined="true" Style=@(!Expanded?"max-height: 50px;":"")>
     <MudCardHeader Class="pt-0 pb-0 pl-0 pr-3">
         <CardHeaderContent>
@@ -31,41 +39,47 @@
                 OnClick="() => Expanded = !Expanded"/>
         </CardHeaderActions>
     </MudCardHeader>
-    <MudCollapse Expanded="Expanded" Style="background-color: var(--mud-palette-dark);color: var(--mud-palette-dark-text);border-radius:3px">
-        <MudCardContent Class="console-content" Style="height: 100px;display:flex;flex-direction:column-reverse;
-        overflow:scroll;align-items:start;position:relative">
-            @if (Ps.IsRunActive(Guid))
-            {
-                <MudElement Style="position:absolute;top:4px;right:0">
-                    <MudTooltip Text="Stop Process">
-                        <MudIconButton Icon="@Icons.Material.Filled.Stop" Color="Color.Error"
-                                       Size="Size.Large" OnClick=@(() => OnStopClick.InvokeAsync())/>
-                    </MudTooltip>
-                </MudElement>
-                
-            }
-            <MudPaper Elevation="0" Style="background-color: rgba(0,0,0,0);display: flex;flex-direction: column-reverse;">
+    <MudCollapse Expanded="Expanded" Style="background-color: var(--mud-palette-dark);color: var(--mud-palette-dark-text);border-radius:3px;position:relative">
+        @if (Ps.IsRunActive(Guid))
+        {
+            <MudElement Style="position:absolute;top:4px;right:4px;z-index:10">
+                <MudTooltip Text="Stop Process">
+                    <MudIconButton Icon="@Icons.Material.Filled.Stop" Color="Color.Error"
+                                   Size="Size.Large" OnClick=@(() => OnStopClick.InvokeAsync())/>
+                </MudTooltip>
+            </MudElement>
 
-                @if (!string.IsNullOrEmpty(Output))
-                {
-                    @foreach (var line in Output.Split('\n').SkipLast(1).Reverse())
+        }
+        <div @ref="_consoleRef" style="overflow:scroll;width:100%">
+            <MudCardContent Class="console-content" Style="height: 100px;display:flex;
+            align-items:start;position:relative">
+
+                <MudPaper Elevation="0" Style="background-color: rgba(0,0,0,0);display: flex;flex-direction: column;overflow:scroll">
+                    @if (!string.IsNullOrEmpty(Output))
                     {
-                        Color color = line.StartsWith("INFO") ? Color.Info : line.StartsWith("ERROR") ? Color.Error : line.StartsWith("WARNING") ? Color.Warning : Color.Default;
-                        <MudText Typo="Typo.body2" Color="@color" Style="font-family: monospace"><pre>> @line</pre></MudText>
+                        @foreach (var line in Output.Split('\n').SkipLast(1))
+                        {
+                            Color color = line.StartsWith("INFO") ? Color.Info : line.StartsWith("ERROR") ? Color.Error : line.StartsWith("WARNING") ? Color.Warning : Color.Default;
+                            <MudText HtmlTag="span" Typo="Typo.body2" Color="@color" Style="font-family: monospace">> @line<br/></MudText>
+                        }
                     }
-                }
-                else
-                {
-                    <MudText Typo="Typo.body2" Style="font-family: monospace">No output</MudText>
-                }
-            </MudPaper>
-        </MudCardContent>
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Style="font-family: monospace">No output</MudText>
+                    }
+                </MudPaper>
+            </MudCardContent>
+        </div>
     </MudCollapse>
 </MudCard>
-
 @code {
     [Parameter] public string Output { get; set; }
     [Parameter] public Guid Guid { get; set; }
     [Parameter] public EventCallback OnStopClick { get; set; }
     [Parameter] public bool Expanded { get; set; } = true;
+    private ElementReference _consoleRef;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Js.InvokeVoidAsync("scrollToBottom", _consoleRef);
+    }
 }
