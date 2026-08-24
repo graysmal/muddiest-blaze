@@ -113,7 +113,7 @@ public class PythonService
         await pg.SaveChangesAsync();
             
         // get list of file before running script to zip output later
-        var preRunFiles = Directory.EnumerateFiles(pyRunDirPath).ToList();
+        var preRunFiles = Directory.EnumerateFiles(pyRunDirPath, "*", SearchOption.AllDirectories).ToList();
         // run script
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
             proc.StartInfo.FileName = $"{scriptPath}/.venv/Scripts/python.exe";
@@ -140,7 +140,7 @@ public class PythonService
             await File.WriteAllTextAsync($"{pyRunDirPath}/console.log", consoleOutput);
         }
         // zip up all output files and return list of files
-        var postRunFiles = Directory.EnumerateFiles(pyRunDirPath);
+        var postRunFiles = Directory.EnumerateFiles(pyRunDirPath, "*", SearchOption.AllDirectories);
         postRunFiles = postRunFiles.Where(f => !preRunFiles.Contains(f)).ToList();
         var zipPath = $"{pyRunDirPath}/run-{guid}-output.zip";
         await using (var fs = new FileStream(zipPath, FileMode.Create))
@@ -149,11 +149,12 @@ public class PythonService
             {
                 foreach (var file in postRunFiles)
                 {
-                    await archive.CreateEntryFromFileAsync(file, Path.GetFileName(file));
+                    var relativePath = Path.GetRelativePath(pyRunDirPath, file);
+                    await archive.CreateEntryFromFileAsync(file, relativePath);
                 }
             }
         }
-        postRunFiles = postRunFiles.Select(f => Path.GetFileName(f));
+        postRunFiles = postRunFiles.Select(f => Path.GetRelativePath(pyRunDirPath, f));
         var postRunFilesList = postRunFiles.ToList();
         onOutputZip?.Invoke(postRunFilesList);
             
