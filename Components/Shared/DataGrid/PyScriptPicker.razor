@@ -9,6 +9,7 @@
         width: 10px;
     }
 </style>
+
 <MudDataGrid T="PythonScript" Items="_scripts" Elevation="0"
              SortMode="SortMode.Single" Filterable="true" FilterMode="DataGridFilterMode.ColumnFilterMenu"
              Hover="true" Dense="true" QuickFilter="QuickFilter"
@@ -20,18 +21,20 @@
     <Columns>
         <TemplateColumn CellClass="pa-0">
             <CellTemplate>
-                <MudListItem T="PythonScript" OnClick="async () => { await OnScriptChange(context.Item); }"
-                             Style=@($"flex-direction:row-reverse;" + (context.Item == Script ? "background-color: var(--mud-palette-primary);" : ""))>
-                    <MudTooltip Text="@context.Item.Name" Placement="Placement.Right" RootStyle="width:100%;overflow:clip;text-overflow:ellipsis;" Disabled=@(context.Item.Name.Length < 20)>
-                        @context.Item.Name
-                        <MudElement Style="display:block">
-                        @foreach (var tag in context.Item.GetTags())
-                        {
-                            <MudChip T="string" Text="@tag" Size="Size.Small"/>
-                        }
-                        </MudElement>
-                    </MudTooltip>
-                </MudListItem>
+                <MudList>
+                    <MudListItem T="PythonScript" OnClick="async () => { await OnScriptChange(context.Item); }"
+                                 Style=@($"flex-direction:row-reverse;" + (context.Item == Script ? "background-color: var(--mud-palette-primary);" : ""))>
+                        <MudTooltip Text="@context.Item.Name" Placement="Placement.Right" RootStyle="width:100%;overflow:clip;text-overflow:ellipsis;" Disabled=@(context.Item.Name.Length < 20)>
+                            @context.Item.Name
+                            <MudElement Style="display:block">
+                                @foreach (var tag in context.Item.GetTags())
+                                {
+                                    <MudChip T="string" Text="@tag" Size="Size.Small"/>
+                                }
+                            </MudElement>
+                        </MudTooltip>
+                    </MudListItem>
+                </MudList>
             </CellTemplate>
         </TemplateColumn>
     </Columns>
