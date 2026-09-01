@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+
 <style>
     :root {
         --mud-drawer-width: 232px; /* needed to have proper gap between navbar and body. */
@@ -18,7 +20,7 @@
             <MudDivider Class="my-2"/>
             <MudNavLink Href="/" Match="NavLinkMatch.All">Home</MudNavLink>
             <MudNavLink Href="/scripts">Scripts</MudNavLink>
-            <MudNavLink Href="/admin">Admin</MudNavLink>
+            <AuthorizeView Policy="APP_Blazor_Admin"><Authorized><MudNavLink Href="/admin">Admin</MudNavLink></Authorized></AuthorizeView>
             <MudNavLink Href="/MicrosoftIdentity/Account/SignOut">Sign Out</MudNavLink>
         </MudNavMenu>
     </MudDrawer>

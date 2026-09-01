@@ -61,6 +61,20 @@ public class PythonScript
         }
     }
 
+    public string? GetPolicy()
+    {
+        try
+        {
+            var scriptJson = File.ReadAllText($"./Scripts/{Name}/script.json");
+            var policy = JsonNode.Parse(scriptJson)["policy"].AsValue().ToString();
+            return policy==""?null:policy;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public DateTime GetDateCreated()
     {
         return File.GetCreationTimeUtc($"./Scripts/{Name}").ToLocalTime();

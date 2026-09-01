@@ -2,5 +2,6 @@
   "tags": [
     "test_script",
     "hello_world"
-  ]
+  ],
+  "policy": "APP_Blazor_Admin"
 }

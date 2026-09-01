@@ -5,9 +5,11 @@
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
+@using Microsoft.AspNetCore.Authorization
 @inject PythonService Ps
 @inject PostgresContext Pg
 @inject NavigationManager NavigationManager
+@attribute [Authorize]
 <style>
     /** { outline: 1px solid black;
         outline-offset: -1px; }*/

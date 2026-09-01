@@ -1,5 +1,6 @@
 @using BlazorApp1.Entities
 @inject IDialogService DialogService
+@using Microsoft.AspNetCore.Components.Authorization
 
 <style>
     .mud-table-pagination {
@@ -29,15 +30,19 @@
         <MudText>No requirements found.</MudText>
     </NoRecordsContent>
     <PagerContent>
-        <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Add" OnClick="OnAdd"></MudIconButton>
-        <MudSpacer />
-        <MudTooltip Text=@GetCommitTooltip()>
-            <MudButton Disabled=@(!_validator.IsValid || !IsChanged())  OnClick="OnCommit">Commit Changes</MudButton>
-        </MudTooltip>
-        <MudSpacer />
-        <MudTooltip Text=@GetUndoTooltip()>
-            <MudButton Disabled=@(!IsChanged())  OnClick="SetRequirementsList">Undo Changes</MudButton>
-        </MudTooltip>
+        <AuthorizeView Policy="APP_Blazor_Admin">
+            <Authorized>
+                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Add" OnClick="OnAdd"></MudIconButton>
+                <MudSpacer/>
+                <MudTooltip Text=@GetCommitTooltip()>
+                    <MudButton Disabled=@(!_validator.IsValid || !IsChanged()) OnClick="OnCommit">Commit Changes</MudButton>
+                </MudTooltip>
+                <MudSpacer/>
+                <MudTooltip Text=@GetUndoTooltip()>
+                    <MudButton Disabled=@(!IsChanged()) OnClick="SetRequirementsList">Undo Changes</MudButton>
+                </MudTooltip>
+            </Authorized>
+        </AuthorizeView>
     </PagerContent>
 </MudDataGrid>
 

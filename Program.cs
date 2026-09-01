@@ -95,6 +95,12 @@ builder.Services.AddMudServices()
     .AddControllersWithViews()
     .AddMicrosoftIdentityUI();
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthorizationCore(options =>
+{
+    options.AddPolicy("APP_Blazor_Admin", policy =>
+        policy.RequireClaim("groups", "3c659545-aec6-40b4-aff6-5bfa069e7e10"));
+});
+
 var httpContextAccessor = new HttpContextAccessor(); // create httpcontext to share between service and Audit.Configuration.
 builder.Services.AddSingleton<IHttpContextAccessor>(httpContextAccessor);
 

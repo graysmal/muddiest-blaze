@@ -1,6 +1,10 @@
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
 @inject IDialogService DialogService
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthStateProvider
 <style>
     .mud-input-control-input-container {
         height:100%;
@@ -11,29 +15,36 @@
 </style>
 <MudCard Style="height:100%;width:100%" Elevation="0">
     <MudTextField T="string"
-        Label="Script Contents"
-        Disabled="@(Script==null)"
-        Variant="Variant.Outlined"
-        Sizing="InputSizing.Auto"
-        @bind-Text="_scriptContent"
-        Immediate="true" Style="height:100%"/>
-    <MudStack Row="true">
-        <MudButton Color="Color.Error" Disabled="Script==null" OnClick="OnDelete">Delete Script</MudButton>
-        <MudSpacer/>
-        <MudTooltip Text=@(!IsChanged() ? "No changes" : "") Placement="Placement.Top">
-            <MudButton Disabled="!IsChanged()" OnClick="OnCommit">Commit Changes</MudButton>
-            <MudButton Disabled="!IsChanged()" OnClick="SetScriptContent">Undo Changes</MudButton>
-        </MudTooltip>
-    </MudStack>
+                  Label="Script Contents"
+                  Disabled="@(Script==null)"
+                  Variant="Variant.Outlined"
+                  Sizing="InputSizing.Auto"
+                  @bind-Text="_scriptContent" ReadOnly="!_isAdmin"
+                  Immediate="true" Style="height:100%"/>
+    <AuthorizeView Policy="APP_Blazor_Admin">
+        <Authorized>
+            <MudStack Row="true">
+                <MudButton Color="Color.Error" Disabled="Script == null" OnClick="OnDelete">Delete Script</MudButton>
+                <MudSpacer/>
+                <MudTooltip Text=@(!IsChanged() ? "No changes" : "") Placement="Placement.Top">
+                    <MudButton Disabled="!IsChanged()" OnClick="OnCommit">Commit Changes</MudButton>
+                    <MudButton Disabled="!IsChanged()" OnClick="SetScriptContent">Undo Changes</MudButton>
+                </MudTooltip>
+            </MudStack>
+        </Authorized>
+    </AuthorizeView>
 </MudCard>
 @code {
     [Parameter] public PythonScript? Script { get; set; }
     [Parameter] public EventCallback OnDeleted { get; set; }
     private string _scriptContent = "";
+    private bool _isAdmin { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
         SetScriptContent();
+        var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User;
+        _isAdmin = (await AuthorizationService.AuthorizeAsync(user, "APP_Blazor_Admin")).Succeeded;
     }
 
     private void SetScriptContent()

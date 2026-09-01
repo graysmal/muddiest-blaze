@@ -1,10 +1,12 @@
 @using System.Text
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
 @inject PostgresContext Pg
 @inject IJSRuntime JSRuntime
+@inject IAuthorizationService AuthorizationService
 @inject AuthenticationStateProvider AuthStateProvider
 <style>
     .h-full {
@@ -33,7 +35,7 @@
     <Columns>
         <PropertyColumn Property="x => x.Id" Title="ID" Resizable="true" />
         <PropertyColumn Property="x => x.ScriptName" Title="Script Name" Resizable="true" />
-        <PropertyColumn Property="x => x.User" Title="User" Resizable="true" />
+        <PropertyColumn Property="x => x.User" Title="User" Resizable="true" Filterable="_isAdmin" ShowFilterIcon="_isAdmin"/>
         <PropertyColumn Property="x => x.Status" Title="Status" Resizable="true" />
         <PropertyColumn Property="x => x.Started.ToLocalTime()" Title="Started" Resizable="true" InitialDirection="SortDirection.Descending" />
         <PropertyColumn Property="x => x.Ended.HasValue?x.Ended.Value.ToLocalTime():x.Ended" Title="Ended" Resizable="true" />
@@ -76,20 +78,25 @@
 @code {
     [Parameter] public PythonScript? Script { get; set; }
     private MudDataGrid<PythonRun> _grid = null!;
+    private bool _isAdmin { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
         _grid.FilterDefinitions.Clear();
-        var username = (await AuthStateProvider.GetAuthenticationStateAsync()).User.FindFirst("preferred_username")?.Value;
-        _grid.FilterDefinitions.Add(new FilterDefinition<PythonRun>
-        {
-            Id = Guid.NewGuid(),
-            Title = "User",
-            Column = _grid.RenderedColumns.First(x => x.Title == "User"),
-            Operator = "equals",
-            Value = username
-        });
+        var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User;
+        var username = user.FindFirst("preferred_username")?.Value;
+        _isAdmin = (await AuthorizationService.AuthorizeAsync(user, "APP_Blazor_Admin")).Succeeded;
+        if (!_isAdmin) {
+            _grid.FilterDefinitions.Add(new FilterDefinition<PythonRun>
+            {
+                Id = Guid.NewGuid(),
+                Title = "User",
+                Column = _grid.RenderedColumns.First(x => x.Title == "User"),
+                Operator = "equals",
+                Value = username
+            });
+        }
         if (Script != null)
         {
             _grid.FilterDefinitions.Add(new FilterDefinition<PythonRun>
@@ -107,7 +114,7 @@
     private async Task<GridData<PythonRun>> ServerReload(GridState<PythonRun> state, CancellationToken token = default)
     {
         IEnumerable<PythonRun> data = Pg.PythonRuns.AsNoTracking();
-
+        
         if (state.SortDefinitions.Any())
         {
             var firstSort = state.SortDefinitions.First();
@@ -147,4 +154,10 @@
         }
     }
 
+    private async Task<bool> DoesUserHavePolicy(string policy)
+    {
+        return (await AuthorizationService.AuthorizeAsync(
+            (await AuthStateProvider.GetAuthenticationStateAsync()).User,
+            policy)).Succeeded;
+    }
 }

@@ -1,5 +1,10 @@
 @using BlazorApp1.Entities
 @using BlazorApp1.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthStateProvider
+
 <style>
     .h-full {
         height: 100%;
@@ -59,10 +64,15 @@
             return true;
         return false;
     };
-    
-    protected override void OnInitialized()
+
+    protected override async Task OnInitializedAsync()
     {
-        _scripts = PythonService.GetPythonScripts();
+        var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User;
+        _scripts = PythonService.GetPythonScripts().Where(s =>
+        {
+            var policy = s.GetPolicy();
+            return policy==null || AuthorizationService.AuthorizeAsync(user, policy).Result.Succeeded;
+        }).ToList();
     }
 
     private async Task OnScriptChange(PythonScript script)
