@@ -5,43 +5,43 @@
 @inject IConfiguration Configuration
 
 <MudDataGrid @ref="_grid" T="LogEvent" ServerData="ServerReload" Elevation="0" Dense="true"
-                     Class="d-flex flex-column h-full w-full"
-                     FixedHeader="true" Height="100%" Hover="true"
-                     ColumnResizeMode="ResizeMode.Container"
-                     Filterable="false"
-                     ShowMenuIcon="true" Hideable="true" ShowColumnOptions="false" 
-                     SortMode="SortMode.None" RowClass="nowrap" Breakpoint="Breakpoint.None" >
-            <ToolBarContent>
-                <MudText Typo="Typo.h6">System Logs | Loki <MudIconButton Href="@($"{Configuration.GetValue<string>("Grafana:uri")}")" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
-                <MudSpacer/>
-                <MudDateRangePicker DateRange="_dateRange" DateRangeChanged="@(d => OnDateRangePick(d!))" Label="Range" PlaceholderStart="Start Date" PlaceholderEnd="End Date" ></MudDateRangePicker>
-                <MudSpacer/>
-                <MudTextField T="string" ValueChanged="@(s=>OnSearch(s!))" Placeholder="Search" Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-            </ToolBarContent>
-            <Columns>
-                <PropertyColumn Property="x => x.EventDate" Title="EventDate" Resizable="true" InitialDirection="SortDirection.Descending" Sortable="true" />
-                <PropertyColumn Property="x => x.Level" Title="Level" Resizable="true" />
-                <PropertyColumn Property="x => x.RequestMethod" Title="RequestMethod" Resizable="true" />
-                <PropertyColumn Property="x => x.RequestPath" Title="RequestPath" Resizable="true" />
-                <PropertyColumn Property="x => x.StatusCode" Title="StatusCode" Resizable="true" />
-                <PropertyColumn Property="x => x.HttpMethod" Title="HttpMethod" Resizable="true" />
-                <PropertyColumn Property="x => x.Uri" Title="Uri" Resizable="true" />
-                <PropertyColumn Property="x => x.Name" Title="Name" Resizable="true" />
-                <PropertyColumn Property="x => x.PreferredUsername" Title="PreferredUsername" Resizable="true" />
-                <PropertyColumn Property="x => x.ClientIp" Title="ClientIp" Resizable="true" />
-                <PropertyColumn Property="x => x.MachineName" Title="MachineName" Resizable="true" Hidden="true"/>
-                <PropertyColumn Property="x => x.UserAgent" Title="UserAgent" Resizable="true" Hidden="true"/>
-                <PropertyColumn Property="x => x.Message" Title="Message" Resizable="true" Hidden="true"/>
-                <PropertyColumn Property="x => x.ExceptionMessage" Title="Exception" Resizable="true" />
-            </Columns>
-            <PagerContent>
-                <MudDataGridPager T="LogEvent" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
-            </PagerContent>
-            <NoRecordsContent>
-                <MudText>No logs available or Loki instance not configured.</MudText>
-            </NoRecordsContent>
-        </MudDataGrid>
+             Class="d-flex flex-column h-full w-full"
+             FixedHeader="true" Height="100%" Hover="true"
+             ColumnResizeMode="ResizeMode.Container"
+             Filterable="false"
+             ShowMenuIcon="true" Hideable="true" ShowColumnOptions="false" 
+             SortMode="SortMode.None" RowClass="nowrap" Breakpoint="Breakpoint.None" >
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">System Logs | Loki <MudIconButton Href="@($"{Configuration.GetValue<string>("Grafana:uri")}")" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
+        <MudSpacer/>
+        <MudDateRangePicker DateRange="_dateRange" DateRangeChanged="@(d => OnDateRangePick(d!))" Label="Range" PlaceholderStart="Start Date" PlaceholderEnd="End Date" ></MudDateRangePicker>
+        <MudSpacer/>
+        <MudTextField T="string" ValueChanged="@(s=>OnSearch(s!))" Placeholder="Search" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Property="x => x.EventDate" Title="EventDate" Resizable="true" InitialDirection="SortDirection.Descending" Sortable="true" />
+        <PropertyColumn Property="x => x.Level" Title="Level" Resizable="true" />
+        <PropertyColumn Property="x => x.RequestMethod" Title="RequestMethod" Resizable="true" />
+        <PropertyColumn Property="x => x.RequestPath" Title="RequestPath" Resizable="true" />
+        <PropertyColumn Property="x => x.StatusCode" Title="StatusCode" Resizable="true" />
+        <PropertyColumn Property="x => x.HttpMethod" Title="HttpMethod" Resizable="true" />
+        <PropertyColumn Property="x => x.Uri" Title="Uri" Resizable="true" />
+        <PropertyColumn Property="x => x.Name" Title="Name" Resizable="true" />
+        <PropertyColumn Property="x => x.PreferredUsername" Title="PreferredUsername" Resizable="true" />
+        <PropertyColumn Property="x => x.ClientIp" Title="ClientIp" Resizable="true" />
+        <PropertyColumn Property="x => x.MachineName" Title="MachineName" Resizable="true" Hidden="true"/>
+        <PropertyColumn Property="x => x.UserAgent" Title="UserAgent" Resizable="true" Hidden="true"/>
+        <PropertyColumn Property="x => x.Message" Title="Message" Resizable="true" Hidden="true"/>
+        <PropertyColumn Property="x => x.ExceptionMessage" Title="Exception" Resizable="true" />
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="LogEvent" Class="h-full overflow-hidden align-center" PageSizeOptions="[50, 100]"/>
+    </PagerContent>
+    <NoRecordsContent>
+        <MudText>No logs available or Loki instance not configured.</MudText>
+    </NoRecordsContent>
+</MudDataGrid>
 
 @code {
     private string _searchString = "";

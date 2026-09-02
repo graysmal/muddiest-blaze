@@ -13,6 +13,10 @@
     <ToolBarContent>
         <MudText Typo="Typo.h6">Audit Logs | PostgreSQL <MudIconButton Href="@($"{Configuration.GetValue<string>("Grafana:uri")}")" Target="_" Icon="@Icons.Material.Filled.ShowChart" /></MudText>
         <MudSpacer/>
+        <MudDateRangePicker Disabled="_allTimeCheck" DateRange="_dateRange" DateRangeChanged="@(d => OnDateRangePick(d!))" Label="Range" PlaceholderStart="Start Date" PlaceholderEnd="End Date" ></MudDateRangePicker>
+        <MudDivider Vertical="true" Style="margin: 8px 8px 8px 20px;"/>
+        <MudCheckBox T="bool" ValueChanged="OnAllTimeCheck" Label="All Time" Size="Size.Small" Class=" mud-input-underline mud-input" Style="padding-right:12px" />
+        <MudSpacer/>
         <MudTextField T="string" ValueChanged="@(s=>OnSearch(s!))" Placeholder="Search" Adornment="Adornment.Start"
                       AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
     </ToolBarContent>
@@ -32,11 +36,17 @@
 
 @code {
     private string _searchString = "";
+    private DateRange _dateRange = new(DateTime.Now.AddMonths(-1), DateTime.Now);
+    private bool _allTimeCheck;
     private MudDataGrid<AuditEvent> _grid = null!;
     
     private async Task<GridData<AuditEvent>> ServerReload(GridState<AuditEvent> state, CancellationToken token = default)
     {
         IEnumerable<AuditEvent> data = Pg.AuditEvents; // TODO: do not ToList immediately.
+        if (!_allTimeCheck)
+        {
+            data = data.Where(o => o.EventDate >= _dateRange.Start &&  o.EventDate <= _dateRange.End.Value.AddDays(1));
+        }
         data = data.Where(o => $"{o.EventDate.ToShortDateString()} {o.EventType} {o.Name} {o.PreferredUsername} {o.ClientIp} {o.MachineName} {o.UserAgent}".ToLower().Contains(_searchString.ToLower())).ToArray();
         
         if (state.SortDefinitions.Any())
@@ -63,4 +73,17 @@
         _searchString = text;
         _grid.ReloadServerData();
     }
+    
+    private void OnDateRangePick(DateRange dateRange)
+    {
+        _dateRange = dateRange;
+        _grid.ReloadServerData();
+    }
+
+    private void OnAllTimeCheck(bool value)
+    {
+        _allTimeCheck = value;
+        _grid.ReloadServerData();
+    }
+
 }
