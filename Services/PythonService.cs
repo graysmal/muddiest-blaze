@@ -211,7 +211,7 @@ public class PythonService
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            // TODO: check if python is installed on windows. need to find install location.
+            // TODO: check if python is installed on Windows. need to find install location.
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -220,26 +220,26 @@ public class PythonService
         return false;
     }
 
-    private static async Task InstallPython(Process proc)
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            proc.StartInfo.FileName = "winget";
-            proc.StartInfo.Arguments = "install -e --id Python.Python.3 --silent";
-            await RunWithOutput(proc);
-            // TODO: verify this works.
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            // TODO: install python on linux, may depend on distro, may require permissions, luckily python is installed on most distros.
-        }
-    }
+    // private static async Task InstallPython(Process proc)
+    // {
+    //     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    //     {
+    //         proc.StartInfo.FileName = "winget";
+    //         proc.StartInfo.Arguments = "install -e --id Python.Python.3 --silent";
+    //         await RunWithOutput(proc);
+    //         // TODO: verify this works.
+    //     }
+    //     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+    //     {
+    //         // TODO: install python on linux, may depend on distro, may require permissions, luckily python is installed on most distros.
+    //     }
+    // }
     
     private static bool IsUvInstalled()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            // TODO: check if uv is installed on windows. need to find install location.
+            // TODO: check if uv is installed on Windows. need to find install location.
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {

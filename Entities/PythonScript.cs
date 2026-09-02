@@ -4,7 +4,7 @@ namespace BlazorApp1.Entities;
 
 public class PythonScript
 {
-    public string Name { get; set; }
+    public required string Name { get; init; }
 
     public string GetContent()
     {
@@ -21,7 +21,7 @@ public class PythonScript
         if (!File.Exists($"./Scripts/{Name}/requirements.txt")) return [];
         var reqTxt =  File.ReadAllText($"./Scripts/{Name}/requirements.txt");
         return reqTxt.Split('\n').Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line => PythonPackage.FromString(line)).ToList();
+            .Select(PythonPackage.FromString).ToList();
     }
     
     public void SetRequirements(List<PythonPackage> requirements)
@@ -53,7 +53,8 @@ public class PythonScript
         try
         {
             var scriptJson = File.ReadAllText($"./Scripts/{Name}/script.json");
-            return JsonNode.Parse(scriptJson)["tags"].AsArray().Select(tag => tag.ToString()).ToList();
+            var tags = JsonNode.Parse(scriptJson)?["tags"]?.AsArray().Select(tag => tag!.ToString()).ToList();
+            return tags ?? [];
         }
         catch
         {
@@ -66,7 +67,7 @@ public class PythonScript
         try
         {
             var scriptJson = File.ReadAllText($"./Scripts/{Name}/script.json");
-            var policy = JsonNode.Parse(scriptJson)["policy"].AsValue().ToString();
+            var policy = JsonNode.Parse(scriptJson)?["policy"]?.AsValue().ToString();
             return policy==""?null:policy;
         }
         catch

@@ -27,9 +27,9 @@
         <TemplateColumn CellClass="pa-0">
             <CellTemplate>
                 <MudList>
-                    <MudListItem T="PythonScript" OnClick="async () => { await OnScriptChange(context.Item); }"
-                                 Style=@($"flex-direction:row-reverse;" + (context.Item == Script ? "background-color: var(--mud-palette-primary);" : ""))>
-                        <MudTooltip Text="@context.Item.Name" Placement="Placement.Right" RootStyle="width:100%;overflow:clip;text-overflow:ellipsis;" Disabled=@(context.Item.Name.Length < 20)>
+                    <MudListItem T="PythonScript" OnClick="@(async () => { await OnScriptChange(context.Item); })"
+                                 Style=@("flex-direction:row-reverse;" + (context.Item == Script ? "background-color: var(--mud-palette-primary);" : ""))>
+                        <MudTooltip Text="@context.Item.Name" Placement="Placement.Right" RootStyle="width:100%;overflow:clip;text-overflow:ellipsis;" Disabled="@(context.Item.Name.Length < 20)">
                             @context.Item.Name
                             <MudElement Style="display:block">
                                 @foreach (var tag in context.Item.GetTags())
@@ -79,17 +79,5 @@
     {
         Script = script;
         await ScriptChanged.InvokeAsync(script);
-    }
-    
-    private string TruncateString(string input, int length)
-    {
-        if (input.Length <= length)
-        {
-            return input;
-        }
-        else
-        {
-            return input.Substring(0, length) + "...";
-        }
     }
 }

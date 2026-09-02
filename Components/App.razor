@@ -5,6 +5,7 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <base href="/"/>
+    <title>Muddiest Blaze</title>
     <ResourcePreloader/>
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["BlazorApp1.styles.css"]"/>
@@ -34,7 +35,7 @@
         if (fileName) {
             anchorElement.download = fileName;
         }
-
+        
         anchorElement.click();
         anchorElement.remove();
         URL.revokeObjectURL(url);

@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
 @inject PostgresContext Pg
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JsRuntime
 @inject IAuthorizationService AuthorizationService
 @inject AuthenticationStateProvider AuthStateProvider
 <style>
@@ -35,7 +35,7 @@
     <Columns>
         <PropertyColumn Property="x => x.Id" Title="ID" Resizable="true" />
         <PropertyColumn Property="x => x.ScriptName" Title="Script Name" Resizable="true" />
-        <PropertyColumn Property="x => x.User" Title="User" Resizable="true" Filterable="_isAdmin" ShowFilterIcon="_isAdmin"/>
+        <PropertyColumn Property="x => x.User" Title="User" Resizable="true" Filterable="IsAdmin" ShowFilterIcon="IsAdmin"/>
         <PropertyColumn Property="x => x.Status" Title="Status" Resizable="true" />
         <PropertyColumn Property="x => x.Started.ToLocalTime()" Title="Started" Resizable="true" InitialDirection="SortDirection.Descending" />
         <PropertyColumn Property="x => x.Ended.HasValue?x.Ended.Value.ToLocalTime():x.Ended" Title="Ended" Resizable="true" />
@@ -44,7 +44,7 @@
                 @if (context.Item.Params != null)
                 {
                     <MudTooltip Text=@($"{TruncateString(context.Item.Params, 64)}")>
-                        <MudIconButton OnClick=@(() => { DownloadJson(context.Item.Params, $"run-{context.Item.Id}-params.json");}) Target="_top"
+                        <MudIconButton OnClick=@(async () => { await DownloadJson(context.Item.Params, $"run-{context.Item.Id}-params.json");}) Target="_top"
                                        Icon="@Icons.Material.Filled.FileDownload" Size="Size.Small"/>
                     </MudTooltip>
                 }
@@ -78,7 +78,7 @@
 @code {
     [Parameter] public PythonScript? Script { get; set; }
     private MudDataGrid<PythonRun> _grid = null!;
-    private bool _isAdmin { get; set; }
+    private bool IsAdmin { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -86,8 +86,8 @@
         _grid.FilterDefinitions.Clear();
         var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User;
         var username = user.FindFirst("preferred_username")?.Value;
-        _isAdmin = (await AuthorizationService.AuthorizeAsync(user, "APP_Blazor_Admin")).Succeeded;
-        if (!_isAdmin) {
+        IsAdmin = (await AuthorizationService.AuthorizeAsync(user, "APP_Blazor_Admin")).Succeeded;
+        if (!IsAdmin) {
             _grid.FilterDefinitions.Add(new FilterDefinition<PythonRun>
             {
                 Id = Guid.NewGuid(),
@@ -119,16 +119,17 @@
         {
             var firstSort = state.SortDefinitions.First();
             data = firstSort.Descending
-                ? data.OrderByDescending(firstSort.SortFunc).ToList()
-                : data.OrderBy(firstSort.SortFunc).ToList();
+                ? data.OrderByDescending(firstSort.SortFunc)
+                : data.OrderBy(firstSort.SortFunc);
         }
         if (state.FilterDefinitions.Any())
         {
             var filterFunctions = state.FilterDefinitions.Select(f => f.GenerateFilterFunction());
             data = data
-                .Where(o => filterFunctions.All(f => f(o)))
-                .ToList();
+                .Where(o => filterFunctions.All(f => f(o)));
         }
+
+        data = await data.ToAsyncEnumerable().ToListAsync(token);
         var totalItems = data.Count();
 
         var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();
@@ -139,25 +140,12 @@
     {
         var fileStream = new MemoryStream(new UTF8Encoding(true).GetBytes(content));
         using var streamRef = new DotNetStreamReference(stream: fileStream);
-        await JSRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+        await JsRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
     }
 
-    private string TruncateString(string input, int length)
+    private static string TruncateString(string input, int length)
     {
-        if (input.Length <= length)
-        {
-            return input;
-        }
-        else
-        {
-            return input.Substring(0, length) + "...";
-        }
-    }
-
-    private async Task<bool> DoesUserHavePolicy(string policy)
-    {
-        return (await AuthorizationService.AuthorizeAsync(
-            (await AuthStateProvider.GetAuthenticationStateAsync()).User,
-            policy)).Succeeded;
+        if (input.Length <= length) { return input; }
+        return input[..length] + "...";
     }
 }

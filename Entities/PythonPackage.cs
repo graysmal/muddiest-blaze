@@ -2,8 +2,8 @@ namespace BlazorApp1.Entities;
 
 public record PythonPackage
 {
-    public string Name { get; set; }
-    public string Version { get; set; }
+    public required string Name { get; init; }
+    public required string Version { get; init; }
 
     public override string ToString()
     {

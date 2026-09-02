@@ -6,7 +6,7 @@
         <CardHeaderContent>
             <MudButton 
                 Disabled="Script==null" 
-                OnClick="() => Expanded = !Expanded" 
+                OnClick="@(() => Expanded = !Expanded)" 
                 Style="width: 100%;justify-content: unset">
                 <MudText Typo="Typo.h6">Parameters</MudText>
             </MudButton>
@@ -15,7 +15,7 @@
             <MudIconButton
                 Disabled="Script==null"
                 Icon="@(Expanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
-                OnClick="() => Expanded = !Expanded"/>
+                OnClick="@(() => Expanded = !Expanded)"/>
         </CardHeaderActions>
     </MudCardHeader>
     <MudCollapse Expanded="@(Script != null && Expanded)">
@@ -54,14 +54,13 @@
     [Parameter] public JsonNode? Parameters { get; set; }
     [Parameter] public EventCallback<(JsonNode?, bool)> OnRunClick { get; set; }
     [Parameter] public bool Expanded { get; set; } = true;
-    private bool _saveConsole = false;
-    private JsonNode? _originalParameters = null;
+    private bool _saveConsole;
+    private JsonNode? _originalParameters;
 
-    
-    protected override async Task OnParametersSetAsync()
+    protected override void OnParametersSet()
     {
         if (Script != null)
-        _originalParameters = Script.GetParameterManifest();
+            _originalParameters = Script.GetParameterManifest();
     }
 
     private async Task OnRun()
@@ -70,7 +69,7 @@
         await OnRunClick.InvokeAsync((Parameters, _saveConsole));
     }
     
-    private async Task OnReset()
+    private void OnReset()
     {
         if (Script != null)
         {

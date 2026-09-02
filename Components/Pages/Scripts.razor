@@ -39,7 +39,7 @@
     <MudDivider Vertical="true" />
     <MudStack Class="w-20"> @* column stack of script info header and mudtabs *@
         <MudStack Row="true" AlignItems="AlignItems.Center"> @* row stack of script name and relevant dates*@
-            <MudText T="string" Typo="Typo.h6">@(_script == null ? "No script selected" : _script.Name)</MudText>
+            <MudText Typo="Typo.h6">@(_script == null ? "No script selected" : _script.Name)</MudText>
             <MudSpacer/>
             <MudTooltip Text=@(_script == null ? "Last Run User": Pg.PythonRuns
                                  .Where(x => x.ScriptName == _script.Name)
@@ -49,7 +49,7 @@
                     Last Ran: @(_script == null ? "##/##/####" : Pg.PythonRuns
                                   .Where(x => x.ScriptName == _script.Name)
                                   .OrderByDescending(x => x.Started)
-                                  .FirstOrDefault()?.Started.ToLocalTime().ToString())
+                                  .FirstOrDefault()?.Started.ToLocalTime().ToString("G"))
                 </MudText>
             </MudTooltip>
             <MudTooltip Text=@(_script == null?"":_script.GetDateModified().ToLocalTime().ToLongTimeString())>
@@ -63,7 +63,7 @@
                 </MudText>
             </MudTooltip>
         </MudStack>
-        <MudTabs @ref="_tabs" Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20">
+        <MudTabs Class="h-full d-flex flex-column" TabPanelsClass="flex-grow-1 h-20">
             <MudTabPanel Text="Runner">
                 <MudStack Class="h-full overflow-scroll" StretchItems="StretchItems.Middle">
                     <PyParams @ref="_pyparams" Script="@_script" Parameters="@_parameters" OnRunClick="OnRun"/>
@@ -85,13 +85,13 @@
 </MudStack>
 
 @code {
+    #pragma warning disable BL0005
     private PythonScript? _script;
     private JsonNode? _parameters;
     private string _output = "";
     private Guid _runGuid = Guid.Empty;
     private List<string> _zippedFiles = [];
-    private MudTabs? _tabs = null!;
-    private PyParams? _pyparams = null!;
+    private PyParams _pyparams = null!;
     private ConsoleOutput _console = null!;
     
     private void OnScriptChanged(PythonScript script)
@@ -102,29 +102,24 @@
         _output = "";
         _zippedFiles = [];
         _runGuid = Guid.Empty;
-        if (_pyparams != null)
-        {
-            _pyparams.Expanded = true;
-        }
+        
+        _pyparams.Expanded = true;
     }
     private async Task OnRun((JsonNode? parameters, bool saveConsole) args)
     {
-        if (_console != null)
-        {
-            _console.Expanded = true;
-        }
+        _console.Expanded = true;
         if (_script != null)
         {
-            var _taskGuid = Guid.Empty;
+            var taskGuid = Guid.Empty;
             _output = "";
             await Ps.RunAsync(_script, args.parameters, args.saveConsole,
                 runGuid => 
                 { 
                     _runGuid = runGuid;
-                    _taskGuid = runGuid;
+                    taskGuid = runGuid;
                 },line =>
                 {
-                    if (_taskGuid == _runGuid)
+                    if (taskGuid == _runGuid)
                     {
                         InvokeAsync(() =>
                         {
@@ -134,7 +129,7 @@
                     }
                 }, zip =>
                 {
-                    if (_taskGuid == _runGuid)
+                    if (taskGuid == _runGuid)
                     {
                         InvokeAsync(() =>
                         {
@@ -154,7 +149,7 @@
         _output += "Process killed by user.";
     }
 
-    private async Task Refresh()
+    private void Refresh()
     {
         NavigationManager.Refresh(true);
     }

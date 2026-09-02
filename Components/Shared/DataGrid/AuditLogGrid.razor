@@ -1,6 +1,5 @@
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
-@using Microsoft.EntityFrameworkCore
 @inject PostgresContext Pg
 @inject IConfiguration Configuration
 
@@ -37,23 +36,23 @@
     
     private async Task<GridData<AuditEvent>> ServerReload(GridState<AuditEvent> state, CancellationToken token = default)
     {
-        IEnumerable<AuditEvent> data = await Pg.AuditEvents.ToListAsync(token); // TODO: do not ToList immediately.
+        IEnumerable<AuditEvent> data = Pg.AuditEvents; // TODO: do not ToList immediately.
         data = data.Where(o => $"{o.EventDate.ToShortDateString()} {o.EventType} {o.Name} {o.PreferredUsername} {o.ClientIp} {o.MachineName} {o.UserAgent}".ToLower().Contains(_searchString.ToLower())).ToArray();
         
         if (state.SortDefinitions.Any())
         {
             var firstSort = state.SortDefinitions.First();
             data = firstSort.Descending
-                ? data.OrderByDescending(firstSort.SortFunc).ToList()
-                : data.OrderBy(firstSort.SortFunc).ToList();
+                ? data.OrderByDescending(firstSort.SortFunc)
+                : data.OrderBy(firstSort.SortFunc);
         }
         if (state.FilterDefinitions.Any())
         {
             var filterFunctions = state.FilterDefinitions.Select(f => f.GenerateFilterFunction());
             data = data
-                .Where(o => filterFunctions.All(f => f(o)))
-                .ToList();
+                .Where(o => filterFunctions.All(f => f(o)));
         }
+        data = await data.ToAsyncEnumerable().ToListAsync(token);
         var totalItems = data.Count();
 
         var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();

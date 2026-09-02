@@ -17,7 +17,7 @@ for boo in params['example_list_bool']:
     print(boo)
 print('\nexample_list_float:')
 for flo in params['example_list_float']:
-    print(str)
+    print(flo)
 print('\nexample_list_datetime:')
 for dt in params['example_list_datetime']:
     print(dt)
