@@ -75,16 +75,17 @@
         {
             var firstSort = state.SortDefinitions.First();
             data = firstSort.Descending
-                ? data.OrderByDescending(firstSort.SortFunc).ToList()
-                : data.OrderBy(firstSort.SortFunc).ToList();
+                ? data.OrderByDescending(firstSort.SortFunc)
+                : data.OrderBy(firstSort.SortFunc);
         }
         if (state.FilterDefinitions.Any())
         {
             var filterFunctions = state.FilterDefinitions.Select(f => f.GenerateFilterFunction());
             data = data
-                .Where(o => filterFunctions.All(f => f(o)))
-                .ToList();
+                .Where(o => filterFunctions.All(f => f(o)));
         }
+
+        data = data.ToList();
         var totalItems = data.Count();
 
         var pagedData = data.Skip(state.Page * state.PageSize).Take(state.PageSize).ToArray();

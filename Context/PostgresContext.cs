@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using BlazorApp1.Entities;
+﻿using BlazorApp1.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace BlazorApp1.Context;
 
-public partial class PostgresContext : DbContext
+public class PostgresContext : DbContext
 {
     public PostgresContext()
     {
@@ -53,9 +51,5 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.Params).HasColumnName("params");
             entity.Property(e => e.HasOutput).HasColumnName("has_output");
         });
-        
-        OnModelCreatingPartial(modelBuilder);
     }
-
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

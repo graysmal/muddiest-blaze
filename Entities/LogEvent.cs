@@ -9,7 +9,6 @@ public class LogEvent
     public DateTime EventDate { get; set; }
     public string? Level { get; set; }
     public string? Name { get; init; }
-    
     [JsonPropertyName("preferred_username")]
     public string? PreferredUsername { get; init; }
     public string? MachineName { get; init; }

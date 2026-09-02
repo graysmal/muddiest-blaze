@@ -1,5 +1,6 @@
 @using BlazorApp1.Context
 @using BlazorApp1.Entities
+@using Microsoft.EntityFrameworkCore
 @inject PostgresContext Pg
 @inject IConfiguration Configuration
 
@@ -36,7 +37,7 @@
     
     private async Task<GridData<AuditEvent>> ServerReload(GridState<AuditEvent> state, CancellationToken token = default)
     {
-        IEnumerable<AuditEvent> data = Pg.AuditEvents;
+        IEnumerable<AuditEvent> data = await Pg.AuditEvents.ToListAsync(token); // TODO: do not ToList immediately.
         data = data.Where(o => $"{o.EventDate.ToShortDateString()} {o.EventType} {o.Name} {o.PreferredUsername} {o.ClientIp} {o.MachineName} {o.UserAgent}".ToLower().Contains(_searchString.ToLower())).ToArray();
         
         if (state.SortDefinitions.Any())

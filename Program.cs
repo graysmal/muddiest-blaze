@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
-using MudBlazor;
 using MudBlazor.Services;
 using Prometheus;
 using Serilog;
@@ -25,7 +24,9 @@ var builder = WebApplication.CreateBuilder(args);
 // used fluent api rather than appsettings.json because the json serilog object is pretty gross,
 // and there are likely not many changes to be made to these settings per deployment.
 
-const string fileOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Name} ({preferred_username}, {ClientIp}, {MachineName}) trace:{TraceId} req:{RequestId} {Message:lj}{NewLine}{Exception}";
+const string fileOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Name} " +
+                                  "({preferred_username}, {ClientIp}, {MachineName}) " +
+                                  "trace:{TraceId} req:{RequestId} {Message:lj}{NewLine}{Exception}";
 builder.Services.AddSerilog(lc => lc
     .MinimumLevel.ControlledBy(new LoggingLevelSwitch(builder.Configuration.GetValue("Logging:MinimumLevel", LogEventLevel.Information)))
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -42,7 +43,6 @@ builder.Services.AddSerilog(lc => lc
     .Enrich.WithRequestHeader("User-Agent")
     .Enrich.WithUserClaims("Name", "preferred_username")
     .Enrich.WithMachineName());
-
 
 // https://learn.microsoft.com/en-us/aspnet/core/blazor/security/blazor-web-app-with-entra?view=aspnetcore-10.0&pivots=without-yarp-and-aspire#supply-configuration-with-the-json-configuration-provider-app-settings
 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
@@ -70,7 +70,7 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
             },
             OnRedirectToIdentityProviderForSignOut = context =>
             {
-                // log only is made if there is an actual user requesting logout; null can be thrown out.
+                // log should only be made if there is an actual user requesting logout; null can be thrown out.
                 // this event triggers twice when a user logs out, once as the identity and once as null.
                 var (name, preferredUsername) = GetLoggingClaims(context.HttpContext.User);
                 if (name is null && preferredUsername is null) return Task.CompletedTask;
@@ -90,7 +90,6 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices()
-    .AddMudMarkdownServices()
     .AddAuthorization()
     .AddControllersWithViews()
     .AddMicrosoftIdentityUI();
@@ -101,7 +100,7 @@ builder.Services.AddAuthorizationCore(options =>
         policy.RequireClaim("groups", "3c659545-aec6-40b4-aff6-5bfa069e7e10"));
 });
 
-var httpContextAccessor = new HttpContextAccessor(); // create httpcontext to share between service and Audit.Configuration.
+var httpContextAccessor = new HttpContextAccessor(); // create httpcontext to share between httpcontext service and Audit.Configuration.
 builder.Services.AddSingleton<IHttpContextAccessor>(httpContextAccessor);
 
 // https://stackoverflow.com/questions/43749236/net-core-x-forwarded-proto-not-working
@@ -128,7 +127,7 @@ var dbProvider = builder.Configuration.GetValue<string>("Database:Provider") ??
 switch (dbProvider)
 {
     case "PostgreSQL":
-        string pgConnectionString = builder.Configuration.GetConnectionString("PostgreSQL") ??
+        var pgConnectionString = builder.Configuration.GetConnectionString("PostgreSQL") ??
                                   throw new InvalidOperationException("PostgreSQL connection string not configured.");
         builder.Services.AddDbContextFactory<PostgresContext>(options =>
         {
@@ -148,7 +147,7 @@ switch (dbProvider)
          );
         break;
     case "SQLServer":
-        string msConnectionString = builder.Configuration.GetConnectionString("SQLServer") ??
+        var msConnectionString = builder.Configuration.GetConnectionString("SQLServer") ??
                                   throw new InvalidOperationException("SQLServer connection string not configured.");
         builder.Services.AddDbContextFactory<PostgresContext>(options =>
         {

@@ -20,30 +20,30 @@ public class LokiService
     public async Task<List<LogEvent>> RunQueryRange(LokiQueryOptions options, CancellationToken token)
     {
         List<LogEvent> data = [];
-        await using (var auditScope = await AuditScope.CreateAsync("Loki:QueryRange", () => new { }, cancellationToken: token))
+        await using var auditScope = await AuditScope.CreateAsync("Loki:QueryRange", 
+            () => new { }, cancellationToken: token);
+        var queryString = options.ToQueryString(); 
+        auditScope.SetCustomField("query", queryString);
+        var url = $"/loki/api/v1/query_range{queryString}";
+        var response = await _httpClient.GetAsync(url, token);
+        var lokiResponse = await response.Content.ReadFromJsonAsync<LokiResponse>(token);
+        foreach (var result in lokiResponse!.Data.Result)
         {
-            var queryString = options.ToQueryString(); 
-            auditScope.SetCustomField("query", queryString);
-            var url = $"/loki/api/v1/query_range{queryString}";
-            var response = await _httpClient.GetAsync(url, token);
-            var lokiResponse = await response.Content.ReadFromJsonAsync<LokiResponse>(token);
-            foreach (var result in lokiResponse!.Data.Result)
+            foreach (var value in result.Values)
             {
-                foreach (var value in result.Values)
+                var logEvent = JsonSerializer.Deserialize<LogEvent>(value[1])!;
+                var milliseconds = long.Parse(value[0]) / 1000000;
+                logEvent.EventDate = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).LocalDateTime;
+                logEvent.Level = result.Stream.Level;
+                if (logEvent.Exception != null)
                 {
-                    var logEvent = JsonSerializer.Deserialize<LogEvent>(value[1])!;
-                    var milliseconds = long.Parse(value[0]) / 1000000;
-                    logEvent.EventDate = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).LocalDateTime;
-                    logEvent.Level = result.Stream.Level;
-                    if (logEvent.Exception != null)
-                    {
-                        logEvent.ExceptionMessage = logEvent.Exception.Message;
-                    }
-    
-                    data.Add(logEvent);
+                    logEvent.ExceptionMessage = logEvent.Exception.Message;
                 }
+    
+                data.Add(logEvent);
             }
         }
+
         return data;
     }
 }
@@ -55,6 +55,8 @@ public class LokiQueryOptions
     public DateTimeOffset? Start { get; init; }
     public DateTimeOffset? End { get; init; }
     public int Limit { get; init; } = 100;
+    // ReSharper disable once MemberCanBePrivate.Global
+    // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
     public string Direction { get; set; } = "backward";
 
     public string ToQueryString()

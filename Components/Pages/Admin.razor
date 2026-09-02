@@ -1,12 +1,7 @@
 @page "/admin"
-@using BlazorApp1.Entities
 @using Microsoft.AspNetCore.Authorization
-@using System.Text.Json
 @using BlazorApp1.Components.Shared.DataGrid
-@using BlazorApp1.Services
-@inject LokiService LokiService
 @attribute [Authorize(Policy = "APP_Blazor_Admin")]
-@* @attribute [Authorize(Roles="God")] *@
 <style>
     .nowrap {
         text-wrap-mode: nowrap;
@@ -15,7 +10,6 @@
         text-wrap-mode: wrap !important;
     }
     .h-full {
-        /*100% - height of PagerContent*/
         height: 100%;
         max-height: 100%;
     }
@@ -42,7 +36,3 @@
         <SystemLogGrid />
     </MudTabPanel>
 </MudTabs>
-
-@code {
-
-}
