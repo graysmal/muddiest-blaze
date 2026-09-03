@@ -1,11 +1,16 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
-
+@using MudBlazor.Utilities
+@inject IConfiguration Config
 <style>
     :root {
         --mud-drawer-width: 232px; /* needed to have proper gap between navbar and body. */
     }
     </style>
+<MudText Style="position:absolute;top:0;left:0;background-color:var(--mud-palette-primary);
+z-index:1303;padding:2px;border-radius:5px;line-height: normal" Typo="Typo.subtitle1">
+    @Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+</MudText>
 <MudLayout Class="pa-2 d-flex flex-column" Style="height:100vh">
     @if (!_open)
     {
@@ -57,6 +62,17 @@
         if (firstRender)
         {
             _isDarkMode = await _mudThemeProvider.GetSystemDarkModeAsync();
+            _mudThemeProvider.Theme =  new MudTheme
+            {
+                PaletteDark =
+                {
+                    Primary = new MudColor(Config.GetValue<string>("MudBlazor:Primary:Dark")??"rgba(119,107,231,1)")
+                },
+                PaletteLight =
+                {
+                    Primary = new MudColor(Config.GetValue<string>("MudBlazor:Primary:Light")??"rgba(89,74,226,1)")
+                }
+            };
             StateHasChanged();
         }
     }

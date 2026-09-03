@@ -18,6 +18,7 @@ using Serilog.Sinks.Grafana.Loki;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseWebRoot("wwwroot").UseStaticWebAssets();
 
 // https://codewithmukesh.com/blog/structured-logging-with-serilog-in-aspnet-core/
 // https://github.com/serilog-contrib/serilog-sinks-grafana-loki
