@@ -45,7 +45,7 @@
         IEnumerable<AuditEvent> data = Pg.AuditEvents; // TODO: do not ToList immediately.
         if (!_allTimeCheck)
         {
-            data = data.Where(o => o.EventDate >= _dateRange.Start &&  o.EventDate <= _dateRange.End.Value.AddDays(1));
+            data = data.Where(o => o.EventDate >= _dateRange.Start &&  o.EventDate <= _dateRange.End!.Value.AddDays(1));
         }
         data = data.Where(o => $"{o.EventDate.ToShortDateString()} {o.EventType} {o.Name} {o.PreferredUsername} {o.ClientIp} {o.MachineName} {o.UserAgent}".ToLower().Contains(_searchString.ToLower())).ToArray();
         

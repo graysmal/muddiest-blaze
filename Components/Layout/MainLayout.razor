@@ -7,10 +7,13 @@
         --mud-drawer-width: 232px; /* needed to have proper gap between navbar and body. */
     }
     </style>
-<MudText Style="position:absolute;top:0;left:0;background-color:var(--mud-palette-primary);
+@if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Production")
+{
+    <MudText Style="position:absolute;top:0;left:0;background-color:var(--mud-palette-primary);
 z-index:1303;padding:2px;border-radius:5px;line-height: normal" Typo="Typo.subtitle1">
-    @Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-</MudText>
+        @Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+    </MudText>
+}
 <MudLayout Class="pa-2 d-flex flex-column" Style="height:100vh">
     @if (!_open)
     {
@@ -51,6 +54,7 @@ z-index:1303;padding:2px;border-radius:5px;line-height: normal" Typo="Typo.subti
 </div>
 
 @code {
+    #pragma warning disable BL0005
     private bool _open = true;
     private bool _isDarkMode;
     private MudThemeProvider _mudThemeProvider = null!;
